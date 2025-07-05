@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "944984505105",
+    "project_id": "reclaim-space-df557",
+    "storage_bucket": "reclaim-space-df557.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:944984505105:android:fffea3cb4606a71ddaaab0",
+        "android_client_info": {
+          "package_name": "com.example.reclaim_space"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "944984505105-2ehp6askhmip83kfulas9ibufebnumf3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.reclaim_space",
+            "certificate_hash": "2a54fcf77f17521d651fd693ae15e2e2b2e8c51e"
+          }
+        },
+        {
+          "client_id": "944984505105-s565tpkehslt7056as2c8htrji2bbsgc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhKaXjD1X-9X9WWCkaRuoDh_h0NDM1gi0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "944984505105-s565tpkehslt7056as2c8htrji2bbsgc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "944984505105-htm3oe5fnhsq9ud8bf3t00mus5lc23un.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.reclaimSpace"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
