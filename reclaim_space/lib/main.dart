@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+//import 'screens/splash_screen.dart';
+import 'screens/launch_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,12 +37,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
-        // body: Center(
-          // child: Text(
-          //   'Reclaim Space App',
-          //   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          // ),
+      home: LaunchScreen(),
+      routes: {
+        '/home': (_) => const HomeScreen(), //navigation to home
+      },
+      // body: Center(
+      // child: Text(
+      //   'Reclaim Space App',
+      //   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      // ),
       //   ),
       // ),
     );

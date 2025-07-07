@@ -1,61 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'home_screen.dart';
 class SignupPasswordScreen extends StatefulWidget {
   final String email;
+  final bool isPhone; // NEW
 
-  const SignupPasswordScreen({super.key, required this.email});
+  const SignupPasswordScreen({
+    super.key,
+    required this.email,
+    this.isPhone = false,
+  });
 
   @override
   State<SignupPasswordScreen> createState() => _SignupPasswordScreenState();
 }
 
 class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmController = TextEditingController();
-  bool _isLoading = false;
+  final TextEditingController _pass1 = TextEditingController();
+  final TextEditingController _pass2 = TextEditingController();
+  bool _loading = false;
 
-  Future<void> _signup() async {
-    final password = _passwordController.text.trim();
-    final confirm = _confirmController.text.trim();
+  void _createAccount() async {
+    final p1 = _pass1.text.trim();
+    final p2 = _pass2.text.trim();
 
-    if (password.length < 6 ||
-        !RegExp(r'[A-Z]').hasMatch(password) ||
-        !RegExp(r'[a-z]').hasMatch(password) ||
-        !RegExp(r'[0-9]').hasMatch(password)) {
+    if (p1.length < 6 || !RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(p1)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be strong: upper, lower, number')),
+        const SnackBar(content: Text('Password must be at least 6 characters and include uppercase, lowercase, and a number')),
       );
       return;
     }
 
-    if (password != confirm) {
+    if (p1 != p2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Passwords do not match')),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _loading = true);
 
     try {
-      final cred = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: widget.email, password: password);
+      User? user;
+      if (widget.isPhone) {
+        user = FirebaseAuth.instance.currentUser;
+        await user!.updatePassword(p1);
+      } else {
+        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: widget.email,
+          password: p1,
+        );
+        user = cred.user;
+      }
 
-      await FirebaseFirestore.instance.collection('users').doc(cred.user!.uid).set({
-        'uid': cred.user!.uid,
-        'email': widget.email,
-        'createdAt': Timestamp.now(),
-      });
+      if (user != null) {
+        // Save user in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'email': widget.email,
+          'created_at': Timestamp.now(),
+          'auth_method': widget.isPhone ? 'phone' : 'email',
+        });
 
-      Navigator.pushReplacementNamed(context, '/home'); // We'll make this screen later
+        if (mounted) {
+          // Go to home screen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        }
+      }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Failed to sign up')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Account creation failed')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -63,47 +89,51 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('Create Password'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                labelStyle: TextStyle(color: Colors.white70),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+              const Text(
+                'Create Password',
+                style: TextStyle(color: Colors.yellowAccent, fontSize: 24),
               ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _confirmController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Confirm Password',
-                labelStyle: TextStyle(color: Colors.white70),
+              const SizedBox(height: 30),
+              TextField(
+                controller: _pass1,
+                obscureText: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: TextStyle(color: Colors.white70),
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _signup,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.yellowAccent,
-                      foregroundColor: Colors.black,
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    child: const Text('Create Account'),
-                  ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: _pass2,
+                obscureText: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                  labelStyle: TextStyle(color: Colors.white70),
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _loading ? null : _createAccount,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.yellowAccent,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                child: _loading
+                    ? const CircularProgressIndicator(color: Colors.black)
+                    : const Text('Continue'),
+              ),
+            ],
+          ),
         ),
       ),
     );

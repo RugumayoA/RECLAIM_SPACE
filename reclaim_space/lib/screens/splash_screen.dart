@@ -1,6 +1,9 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
+import 'package:reclaim_space/screens/login_screen.dart';
 import '../widgets/auth_button.dart';
+import '../screens/signup_email_screen.dart';
+import '../services/auth_services.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -99,23 +102,77 @@ class _SplashScreenState extends State<SplashScreen> {
                       AuthButton(
                         icon: Icons.g_mobiledata,
                         label: 'Continue with Google',
-                        onPressed: () {},
+                        onPressed: () {
+                          AuthService.signInWithGoogle(context); //will handle full sign in plus navigation
+                        },
                         dark: true,
                       ),
                       AuthButton(
                         icon: Icons.email_outlined,
                         label: 'Sign up with email',
-                        onPressed: () {},
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                backgroundColor: Colors.black87,
+                                title: const Text(
+                                  'ReclaimSpace',
+                                  style: TextStyle(
+                                    color: Colors.yellowAccent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                content: const Text(
+                                  'You are about to proceed with email sign-up.',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(), //cancel
+                                    child: const Text(
+                                      'Cancel',
+                                      style: TextStyle(color: Colors.redAccent),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pop(); //close dialog
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const SignupEmailScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      'Continue',
+                                      style: TextStyle(
+                                        color: Colors.greenAccent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
                       ),
                       const SizedBox(height: 8),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            );
+                        },
                         child: const Text(
                           'Log in',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       ),
                     ],

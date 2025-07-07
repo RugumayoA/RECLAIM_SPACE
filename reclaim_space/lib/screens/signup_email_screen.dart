@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup_password_screen.dart';
+import 'phone_auth_screen.dart'; // Make sure this file exists
 
 class SignupEmailScreen extends StatefulWidget {
   const SignupEmailScreen({super.key});
@@ -22,9 +23,7 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => SignupPasswordScreen(email: email),
-      ),
+      MaterialPageRoute(builder: (_) => SignupPasswordScreen(email: email)),
     );
   }
 
@@ -50,10 +49,7 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
               const SizedBox(height: 10),
               const Text(
                 'Create an account',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 20,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 20),
               ),
               const SizedBox(height: 40),
               TextField(
@@ -84,7 +80,7 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
               Center(
                 child: TextButton(
                   onPressed: () {
-                    // Navigate to login later
+                    // TODO: Add login navigation
                   },
                   child: const Text(
                     'Already have an account? Log in',
@@ -95,16 +91,16 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
               const SizedBox(height: 30),
               const Divider(color: Colors.white24),
               const Center(
-                child: Text(
-                  'OR',
-                  style: TextStyle(color: Colors.white70),
-                ),
+                child: Text('OR', style: TextStyle(color: Colors.white70)),
               ),
               const Divider(color: Colors.white24),
               const SizedBox(height: 20),
               OutlinedButton(
                 onPressed: () {
-                  // Phone login screen (we’ll add later)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PhoneAuthScreen()),
+                  );
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.white30),
