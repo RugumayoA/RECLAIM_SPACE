@@ -22,6 +22,7 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
   bool _loading = false;
 
   void _createAccount() async {
+    print('Signup button pressed');
     final p1 = _pass1.text.trim();
     final p2 = _pass2.text.trim();
 
@@ -54,14 +55,18 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
         user = cred.user;
       }
 
+      print('User created: ${user?.uid}');
+
       if (user != null) {
         // Save user in Firestore
+        print('Writing user to Firestore...');
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'email': widget.email,
           'created_at': Timestamp.now(),
           'auth_method': widget.isPhone ? 'phone' : 'email',
         });
+        print('User written to Firestore.');
 
         if (mounted) {
           // Go to home screen
@@ -73,9 +78,17 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
         }
       }
     } on FirebaseAuthException catch (e) {
+      print('FirebaseAuthException: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Account creation failed')),
+        );
+      }
+    } catch (e) {
+      print('Unexpected error: ${e.toString()}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unexpected error: ${e.toString()}')),
         );
       }
     } finally {
@@ -87,6 +100,7 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('SignupPasswordScreen build called');
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -122,7 +136,12 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
               ),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: _loading ? null : _createAccount,
+                onPressed: _loading
+                    ? null
+                    : () {
+                        print('Button pressed');
+                        _createAccount();
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellowAccent,
                   foregroundColor: Colors.black,
