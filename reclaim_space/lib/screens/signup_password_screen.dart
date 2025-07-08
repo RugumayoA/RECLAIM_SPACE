@@ -63,8 +63,14 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'email': widget.email,
-          'created_at': Timestamp.now(),
+          'name': '', //asking for name later or in profile update screen
+          'photoUrl': '',
+          'role': 'user',
+          'isActive': true,
+          'verified': false, 
           'auth_method': widget.isPhone ? 'phone' : 'email',
+          'created_at': Timestamp.now(),
+          'lastLogin': Timestamp.now(),
         });
         print('User written to Firestore.');
 

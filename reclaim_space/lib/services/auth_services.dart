@@ -68,11 +68,16 @@ class AuthService {
 
         if (!doc.exists) {
           await userDoc.set({
+            'uid': user.uid,
             'email': user.email,
-            'name': user.displayName,
-            'photoUrl': user.photoURL,
-            'createdAt': FieldValue.serverTimestamp(),
+            'name': user.displayName ?? '',
+            'photoUrl': user.photoURL ?? '',
+            'role': 'user',
+            'isActive': true,
+            'verified': false,
             'authMethod': 'google',
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastlogin': FieldValue.serverTimestamp(),
           });
         }
       }
