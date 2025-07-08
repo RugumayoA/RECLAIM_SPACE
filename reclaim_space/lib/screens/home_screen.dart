@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'launch_screen.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'launch_screen.dart';
 import 'post_lost_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -30,6 +30,7 @@ class HomeScreen extends StatelessWidget {
                 },
                 child: const Text('Post Lost'),
               ),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
                   // Navigate to Post Found screen
