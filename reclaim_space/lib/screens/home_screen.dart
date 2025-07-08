@@ -1,38 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'launch_screen.dart';
+import 'post_lost_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  void _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LaunchScreen()),
-      (route) => false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('Reclaim_Space'),
-        backgroundColor: Colors.yellowAccent,
-        foregroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Hello there, what do you want to do with the app?',
+                style: TextStyle(color: Colors.yellowAccent, fontSize: 20),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PostLostScreen()),
+                  );
+                },
+                child: const Text('Post Lost'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Navigate to Post Found screen
+                },
+                child: const Text('Post Found'),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: const Center(
-        child: Text(
-          'welcome to Reclaim_Space',
-          style: TextStyle(color: Colors.yellowAccent, fontSize: 24),
         ),
       ),
     );
