@@ -54,7 +54,9 @@ class _PostLostScreenState extends State<PostLostScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       selectedCategory = prefs.getString('lost_selectedCategory') ?? 'ID';
-      selectedIDType = prefs.getString('lost_selectedIDType') ?? null;
+      if (selectedCategory == '') selectedCategory = 'ID';
+      selectedIDType = prefs.getString('lost_selectedIDType');
+      if (selectedIDType == '') selectedIDType = null;
       institution = prefs.getString('lost_institution') ?? null;
       name = prefs.getString('lost_name') ?? null;
       age = prefs.getString('lost_age') ?? null;

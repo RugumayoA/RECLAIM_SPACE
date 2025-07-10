@@ -96,7 +96,9 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       selectedCategory = prefs.getString('found_selectedCategory') ?? 'ID';
-      selectedIDType = prefs.getString('found_selectedIDType') ?? null;
+      if (selectedCategory == '') selectedCategory = 'ID';
+      selectedIDType = prefs.getString('found_selectedIDType');
+      if (selectedIDType == '') selectedIDType = null;
       institution = prefs.getString('found_institution') ?? null;
       name = prefs.getString('found_name') ?? null;
       description = prefs.getString('found_description') ?? null;
