@@ -239,13 +239,6 @@ class _PostLostScreenState extends State<PostLostScreen> {
                   Row(
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () => pickImage(ImageSource.camera),
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Take Photo'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.yellowAccent),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton.icon(
                         onPressed: () => pickImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library),
                         label: const Text('Pick from Gallery'),
