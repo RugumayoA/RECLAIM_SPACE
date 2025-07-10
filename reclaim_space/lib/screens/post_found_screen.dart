@@ -2,24 +2,65 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import '../services/post_lost_firebase.dart';
-import 'post_found_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+// import '../services/post_found_firebase.dart'; // Implement this service as needed
 
-class PostLostScreen extends StatefulWidget {
-  const PostLostScreen({super.key});
+class PostSuccessScreen extends StatelessWidget {
+  final String message;
+  const PostSuccessScreen({super.key, required this.message});
 
   @override
-  State<PostLostScreen> createState() => _PostLostScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 80),
+              const SizedBox(height: 24),
+              Text(
+                message,
+                style: const TextStyle(color: Colors.white, fontSize: 22),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                child: const Text('Return Home'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.yellowAccent,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _PostLostScreenState extends State<PostLostScreen> {
+class PostFoundScreen extends StatefulWidget {
+  const PostFoundScreen({super.key});
+
+  @override
+  State<PostFoundScreen> createState() => _PostFoundScreenState();
+}
+
+class _PostFoundScreenState extends State<PostFoundScreen> {
   final _formKey = GlobalKey<FormState>();
-  String selectedCategory = 'ID'; // or 'Person'
+  String selectedCategory = 'ID';
   String? selectedIDType;
   String? institution;
   String? name;
-  String? age;
+  String? description;
   String? location;
+  DateTime? foundDate;
 
   File? imageFile;
   bool _loading = false;
@@ -35,15 +76,15 @@ class _PostLostScreenState extends State<PostLostScreen> {
 
   Future<void> pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: ImageSource.camera);
     if (picked != null) {
       setState(() => imageFile = File(picked.path));
     }
   }
 
   Future<String> uploadImage(File file) async {
-    final fileName = 'lost_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = FirebaseStorage.instance.ref().child('lost_images/$fileName');
+    final fileName = 'found_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final ref = FirebaseStorage.instance.ref().child('found_images/$fileName');
     await ref.putFile(file);
     return await ref.getDownloadURL();
   }
@@ -56,27 +97,37 @@ class _PostLostScreenState extends State<PostLostScreen> {
       );
       return;
     }
+    if (foundDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select the date found')),
+      );
+      return;
+    }
     setState(() => _loading = true);
     try {
       final imageUrl = await uploadImage(imageFile!);
-      await PostLostService.uploadLostPost(
-        type: selectedCategory,
-        subType: selectedIDType,
-        institution: institution,
-        details: {
-          'name': name ?? '',
-          'age': age ?? '',
-          'location': location ?? '',
-        },
-        imageUrl: imageUrl,
-      );
+      final user = FirebaseAuth.instance.currentUser;
+
+      await FirebaseFirestore.instance.collection('found_items').add({
+        'type': selectedCategory,
+        'subType': selectedIDType,
+        'institution': institution,
+        'name': name,
+        'description': description,
+        'location': location,
+        'foundDate': foundDate?.toIso8601String(),
+        'imageUrl': imageUrl,
+        'createdAt': DateTime.now().toIso8601String(),
+        'userId': user?.uid,
+      });
+
       setState(() => _loading = false);
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => const PostSuccessScreen(
-            message: 'Lost item posted successfully! We will notify you if a match is found.',
+            message: 'Found item posted successfully! We will notify you if a match is found.',
           ),
         ),
       );
@@ -94,7 +145,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
       children: [
         Scaffold(
           appBar: AppBar(
-            title: const Text('Post Lost Item'),
+            title: const Text('Post Found Item'),
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
           ),
@@ -106,13 +157,14 @@ class _PostLostScreenState extends State<PostLostScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('What type of item is lost?', style: TextStyle(color: Colors.white)),
+                  const Text('What type of item is found?', style: TextStyle(color: Colors.white)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
                     items: const [
                       DropdownMenuItem(value: 'ID', child: Text('ID', style: TextStyle(color: Colors.white))),
                       DropdownMenuItem(value: 'Person', child: Text('Person', style: TextStyle(color: Colors.white))),
+                      DropdownMenuItem(value: 'Other', child: Text('Other', style: TextStyle(color: Colors.white))),
                     ],
                     dropdownColor: Colors.black,
                     onChanged: (val) => setState(() => selectedCategory = val!),
@@ -146,44 +198,86 @@ class _PostLostScreenState extends State<PostLostScreen> {
                         validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
                       ),
                     ],
-                  ] else ...[
                     TextFormField(
                       onChanged: (val) => name = val,
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
-                        labelText: 'Name',
+                        labelText: 'Name on ID (if visible)',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name' : null,
+                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name on ID (if visible)' : null,
+                    ),
+                  ] else if (selectedCategory == 'Person') ...[
+                    TextFormField(
+                      onChanged: (val) => name = val,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Name (if known)',
+                        labelStyle: TextStyle(color: Colors.white),
+                      ),
+                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name (if known)' : null,
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
-                      onChanged: (val) => age = val,
+                      onChanged: (val) => description = val,
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
-                        labelText: 'Age',
+                        labelText: 'Description/Distinguishing Features',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the age' : null,
+                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter a description' : null,
                     ),
-                    const SizedBox(height: 10),
+                  ] else ...[
                     TextFormField(
-                      onChanged: (val) => location = val,
+                      onChanged: (val) => description = val,
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
-                        labelText: 'Where (Optional)',
+                        labelText: 'Item Description',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the location' : null,
+                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter a description' : null,
                     ),
                   ],
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    onChanged: (val) => location = val,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Where was it found?',
+                      labelStyle: TextStyle(color: Colors.white),
+                    ),
+                    validator: (val) => (val == null || val.isEmpty) ? 'Please enter the location' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Text('Date Found:', style: TextStyle(color: Colors.white)),
+                      const SizedBox(width: 10),
+                      Text(
+                        foundDate == null ? 'Select Date' : foundDate!.toLocal().toString().split(' ')[0],
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.calendar_today, color: Colors.yellowAccent),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) setState(() => foundDate = picked);
+                        },
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     children: [
                       ElevatedButton.icon(
                         onPressed: pickImage,
-                        icon: const Icon(Icons.add_photo_alternate),
-                        label: const Text('Attach Photo'),
+                        icon: const Icon(Icons.add_a_photo),
+                        label: const Text('Take Photo'),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.yellowAccent),
                       ),
                       const SizedBox(width: 10),
@@ -196,7 +290,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
                     onPressed: _loading ? null : submit,
                     child: _loading
                         ? const CircularProgressIndicator(color: Colors.black)
-                        : const Text('Post Lost'),
+                        : const Text('Post Found'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.yellowAccent,
                       foregroundColor: Colors.black,
@@ -218,4 +312,4 @@ class _PostLostScreenState extends State<PostLostScreen> {
       ],
     );
   }
-}
+} 
