@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../services/post_lost_firebase.dart';
 import 'post_found_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PostLostScreen extends StatefulWidget {
   const PostLostScreen({super.key});
@@ -33,9 +34,47 @@ class _PostLostScreenState extends State<PostLostScreen> {
     'Foreigner/Refugee ID'
   ];
 
-  Future<void> pickImage() async {
+  @override
+  void initState() {
+    super.initState();
+    loadDraft();
+  }
+
+  Future<void> saveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lost_selectedCategory', selectedCategory);
+    await prefs.setString('lost_selectedIDType', selectedIDType ?? '');
+    await prefs.setString('lost_institution', institution ?? '');
+    await prefs.setString('lost_name', name ?? '');
+    await prefs.setString('lost_age', age ?? '');
+    await prefs.setString('lost_location', location ?? '');
+  }
+
+  Future<void> loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCategory = prefs.getString('lost_selectedCategory') ?? 'ID';
+      selectedIDType = prefs.getString('lost_selectedIDType') ?? null;
+      institution = prefs.getString('lost_institution') ?? null;
+      name = prefs.getString('lost_name') ?? null;
+      age = prefs.getString('lost_age') ?? null;
+      location = prefs.getString('lost_location') ?? null;
+    });
+  }
+
+  Future<void> clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('lost_selectedCategory');
+    await prefs.remove('lost_selectedIDType');
+    await prefs.remove('lost_institution');
+    await prefs.remove('lost_name');
+    await prefs.remove('lost_age');
+    await prefs.remove('lost_location');
+  }
+
+  Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: source);
     if (picked != null) {
       setState(() => imageFile = File(picked.path));
     }
@@ -70,6 +109,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
         },
         imageUrl: imageUrl,
       );
+      await clearDraft();
       setState(() => _loading = false);
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -115,7 +155,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
                       DropdownMenuItem(value: 'Person', child: Text('Person', style: TextStyle(color: Colors.white))),
                     ],
                     dropdownColor: Colors.black,
-                    onChanged: (val) => setState(() => selectedCategory = val!),
+                    onChanged: (val) {
+                      setState(() => selectedCategory = val!);
+                      saveDraft();
+                    },
                     style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 20),
@@ -128,14 +171,20 @@ class _PostLostScreenState extends State<PostLostScreen> {
                       items: idTypes.map((id) {
                         return DropdownMenuItem(value: id, child: Text(id, style: const TextStyle(color: Colors.white)));
                       }).toList(),
-                      onChanged: (val) => setState(() => selectedIDType = val),
+                      onChanged: (val) {
+                        setState(() => selectedIDType = val);
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       validator: (val) => val == null || val.isEmpty ? 'Please select ID type' : null,
                     ),
                     const SizedBox(height: 10),
                     if (selectedIDType == 'School ID' || selectedIDType == 'Employee ID') ...[
                       TextFormField(
-                        onChanged: (val) => institution = val,
+                        onChanged: (val) {
+                          institution = val;
+                          saveDraft();
+                        },
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: selectedIDType == 'School ID'
@@ -148,7 +197,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
                     ],
                   ] else ...[
                     TextFormField(
-                      onChanged: (val) => name = val,
+                      onChanged: (val) {
+                        name = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Name',
@@ -158,7 +210,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
-                      onChanged: (val) => age = val,
+                      onChanged: (val) {
+                        age = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Age',
@@ -168,7 +223,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
-                      onChanged: (val) => location = val,
+                      onChanged: (val) {
+                        location = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Where (Optional)',
@@ -181,9 +239,16 @@ class _PostLostScreenState extends State<PostLostScreen> {
                   Row(
                     children: [
                       ElevatedButton.icon(
-                        onPressed: pickImage,
-                        icon: const Icon(Icons.add_photo_alternate),
-                        label: const Text('Attach Photo'),
+                        onPressed: () => pickImage(ImageSource.camera),
+                        icon: const Icon(Icons.add_a_photo),
+                        label: const Text('Take Photo'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.yellowAccent),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        onPressed: () => pickImage(ImageSource.gallery),
+                        icon: const Icon(Icons.photo_library),
+                        label: const Text('Pick from Gallery'),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.yellowAccent),
                       ),
                       const SizedBox(width: 10),
