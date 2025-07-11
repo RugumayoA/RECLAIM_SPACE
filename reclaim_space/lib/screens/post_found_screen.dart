@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// import '../services/post_found_firebase.dart'; // Implement this service as needed
+import '../services/image_upload_service.dart';
+import '../services/post_found_firebase.dart'; // Implement this service as needed
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 class PostSuccessScreen extends StatelessWidget {
   final String message;
@@ -62,7 +64,7 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
   String? location;
   DateTime? foundDate;
 
-  File? imageFile;
+  dynamic imageFile; // File (mobile) or Uint8List (web)
   bool _loading = false;
 
   final List<String> idTypes = [
@@ -78,15 +80,17 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.camera);
     if (picked != null) {
-      setState(() => imageFile = File(picked.path));
+      if (kIsWeb) {
+        imageFile = await picked.readAsBytes();
+      } else {
+        imageFile = File(picked.path);
+      }
+      setState(() {});
     }
   }
 
-  Future<String> uploadImage(File file) async {
-    final fileName = 'found_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = FirebaseStorage.instance.ref().child('found_images/$fileName');
-    await ref.putFile(file);
-    return await ref.getDownloadURL();
+  Future<String> uploadImage(dynamic file) async {
+    return await ImageUploadService.uploadImage(file);
   }
 
   Future<void> submit() async {
@@ -105,24 +109,62 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     }
     setState(() => _loading = true);
     try {
-      final imageUrl = await uploadImage(imageFile!);
+      final imageUrl = await uploadImage(imageFile);
       final user = FirebaseAuth.instance.currentUser;
 
-      await FirebaseFirestore.instance.collection('found_items').add({
-        'type': selectedCategory,
-        'subType': selectedIDType,
-        'institution': institution,
-        'name': name,
-        'description': description,
-        'location': location,
-        'foundDate': foundDate?.toIso8601String(),
-        'imageUrl': imageUrl,
-        'createdAt': DateTime.now().toIso8601String(),
-        'userId': user?.uid,
-      });
+      await PostFoundService.uploadFoundPost(
+        type: selectedCategory,
+        subType: selectedIDType,
+        institution: institution,
+        details: {
+          'name': name ?? '',
+          'description': description ?? '',
+          'location': location ?? '',
+        },
+        imageUrl: imageUrl,
+        location: location,
+        foundDate: foundDate?.toIso8601String(),
+      );
 
       setState(() => _loading = false);
       if (!mounted) return;
+      /*
+      // Fetch the latest found item for this user
+      final user = FirebaseAuth.instance.currentUser;
+      final foundQuery = await FirebaseFirestore.instance
+          .collection('found_items')
+          .where('uid', isEqualTo: user?.uid)
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+      if (foundQuery.docs.isNotEmpty) {
+        final foundDoc = foundQuery.docs.first;
+        final foundData = foundDoc.data();
+        if (foundData['matched'] == true && foundData['matchedWith'] != null) {
+          // Fetch the matched lost item
+          final lostDoc = await FirebaseFirestore.instance
+              .collection('lost_items')
+              .doc(foundData['matchedWith'])
+              .get();
+          final lostData = lostDoc.data();
+          if (lostData != null) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Match Found!'),
+                content: Text('A lost item matches your found post!\n\nType: \\${lostData['type']}\nSubType: \\${lostData['subType'] ?? ''}\nInstitution: \\${lostData['institution'] ?? ''}\nName: \\${lostData['details']?['name'] ?? ''}'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+      }
+      */
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 //import 'screens/splash_screen.dart';
 import 'screens/launch_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/post_found_verification_screen.dart';
+import 'screens/country_city_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,9 +39,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LaunchScreen(),
+      //home: LaunchScreen(),
+      initialRoute: '/',
       routes: {
-        '/home': (_) => const HomeScreen(), //navigation to home
+        '/': (context) => const LaunchScreen(),
+        '/home': (context) => const HomeScreen(), //navigation to home
+        '/post-found-verification': (_) => const PostFoundVerificationScreen(),
+        '/country-city': (context) => const CountryCityScreen(),
       },
       // body: Center(
       // child: Text(

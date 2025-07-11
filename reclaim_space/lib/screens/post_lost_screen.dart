@@ -1,9 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../services/image_upload_service.dart';
 import '../services/post_lost_firebase.dart';
 import 'post_found_screen.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PostLostScreen extends StatefulWidget {
   const PostLostScreen({super.key});
@@ -21,7 +25,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
   String? age;
   String? location;
 
-  File? imageFile;
+  dynamic imageFile; // File (mobile) or Uint8List (web)
   bool _loading = false;
 
   final List<String> idTypes = [
@@ -37,15 +41,17 @@ class _PostLostScreenState extends State<PostLostScreen> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() => imageFile = File(picked.path));
+      if (kIsWeb) {
+        imageFile = await picked.readAsBytes();
+      } else {
+        imageFile = File(picked.path);
+      }
+      setState(() {});
     }
   }
 
-  Future<String> uploadImage(File file) async {
-    final fileName = 'lost_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = FirebaseStorage.instance.ref().child('lost_images/$fileName');
-    await ref.putFile(file);
-    return await ref.getDownloadURL();
+  Future<String> uploadImage(dynamic file) async {
+    return await ImageUploadService.uploadImage(file);
   }
 
   Future<void> submit() async {
@@ -58,7 +64,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
     }
     setState(() => _loading = true);
     try {
-      final imageUrl = await uploadImage(imageFile!);
+      final imageUrl = await uploadImage(imageFile);
       await PostLostService.uploadLostPost(
         type: selectedCategory,
         subType: selectedIDType,
@@ -72,6 +78,44 @@ class _PostLostScreenState extends State<PostLostScreen> {
       );
       setState(() => _loading = false);
       if (!mounted) return;
+      /*
+      // Fetch the latest lost item for this user
+      final user = FirebaseAuth.instance.currentUser;
+      final lostQuery = await FirebaseFirestore.instance
+          .collection('lost_items')
+          .where('uid', isEqualTo: user?.uid)
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+      if (lostQuery.docs.isNotEmpty) {
+        final lostDoc = lostQuery.docs.first;
+        final lostData = lostDoc.data();
+        if (lostData['matched'] == true && lostData['matchedWith'] != null) {
+          // Fetch the matched found item
+          final foundDoc = await FirebaseFirestore.instance
+              .collection('found_items')
+              .doc(lostData['matchedWith'])
+              .get();
+          final foundData = foundDoc.data();
+          if (foundData != null) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Match Found!'),
+                content: Text('A found item matches your lost post!\n\nType: ${foundData['type']}\nSubType: ${foundData['subType'] ?? ''}\nInstitution: ${foundData['institution'] ?? ''}\nName: ${foundData['details']?['name'] ?? ''}'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+      }
+      */
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

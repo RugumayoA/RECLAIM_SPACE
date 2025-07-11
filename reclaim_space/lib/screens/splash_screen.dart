@@ -101,6 +101,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                       AuthButton(
                         icon: Icons.g_mobiledata,
+                        // imagePath: 'assets/images/googl_logo.png',
                         label: 'Continue with Google',
                         onPressed: () {
                           AuthService.signInWithGoogle(context); //will handle full sign in plus navigation

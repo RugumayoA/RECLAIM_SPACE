@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AuthButton extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
   final String label;
   final VoidCallback onPressed;
   final bool dark;
+  //final String? imagePath; 
 
   const AuthButton({
     super.key,
@@ -12,6 +13,7 @@ class AuthButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.dark = false,
+    //this.imagePath,
   });
 
   @override
@@ -25,6 +27,9 @@ class AuthButton extends StatelessWidget {
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
+        // icon: imagePath != null
+        //     ? Image.asset(imagePath!, height: 24, width: 24)
+        //     : (icon != null ? Icon(icon) : const SizedBox.shrink()),
         icon: Icon(icon),
         label: Text(label),
         onPressed: onPressed,
