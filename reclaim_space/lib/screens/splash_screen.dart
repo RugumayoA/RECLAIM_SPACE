@@ -4,6 +4,8 @@ import 'package:reclaim_space/screens/login_screen.dart';
 import '../widgets/auth_button.dart';
 import '../screens/signup_email_screen.dart';
 import '../services/auth_services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,6 +34,19 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Firebase Auth check for auto-login
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // User is logged in, go to home
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      });
+      return;
+    }
 
     // Change background every 4 seconds
     Future.doWhile(() async {

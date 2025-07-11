@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/image_upload_service.dart';
-import '../services/post_found_firebase.dart'; // Implement this service as needed
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
+// import '../services/post_found_firebase.dart'; // Implement this service as needed
 
 class PostSuccessScreen extends StatelessWidget {
   final String message;
@@ -76,6 +73,50 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     'Foreigner/Refugee ID'
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    loadDraft();
+  }
+
+  Future<void> saveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('found_selectedCategory', selectedCategory);
+    await prefs.setString('found_selectedIDType', selectedIDType ?? '');
+    await prefs.setString('found_institution', institution ?? '');
+    await prefs.setString('found_name', name ?? '');
+    await prefs.setString('found_description', description ?? '');
+    await prefs.setString('found_location', location ?? '');
+    await prefs.setString('found_foundDate', foundDate?.toIso8601String() ?? '');
+  }
+
+  Future<void> loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCategory = prefs.getString('found_selectedCategory') ?? 'ID';
+      if (selectedCategory == '') selectedCategory = 'ID';
+      selectedIDType = prefs.getString('found_selectedIDType');
+      if (selectedIDType == '') selectedIDType = null;
+      institution = prefs.getString('found_institution') ?? null;
+      name = prefs.getString('found_name') ?? null;
+      description = prefs.getString('found_description') ?? null;
+      location = prefs.getString('found_location') ?? null;
+      final dateStr = prefs.getString('found_foundDate');
+      foundDate = (dateStr != null && dateStr.isNotEmpty) ? DateTime.tryParse(dateStr) : null;
+    });
+  }
+
+  Future<void> clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('found_selectedCategory');
+    await prefs.remove('found_selectedIDType');
+    await prefs.remove('found_institution');
+    await prefs.remove('found_name');
+    await prefs.remove('found_description');
+    await prefs.remove('found_location');
+    await prefs.remove('found_foundDate');
+  }
+
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.camera);
@@ -112,19 +153,18 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
       final imageUrl = await uploadImage(imageFile);
       final user = FirebaseAuth.instance.currentUser;
 
-      await PostFoundService.uploadFoundPost(
-        type: selectedCategory,
-        subType: selectedIDType,
-        institution: institution,
-        details: {
-          'name': name ?? '',
-          'description': description ?? '',
-          'location': location ?? '',
-        },
-        imageUrl: imageUrl,
-        location: location,
-        foundDate: foundDate?.toIso8601String(),
-      );
+      await FirebaseFirestore.instance.collection('found_items').add({
+        'type': selectedCategory,
+        'subType': selectedIDType,
+        'institution': institution,
+        'name': name,
+        'description': description,
+        'location': location,
+        'foundDate': foundDate?.toIso8601String(),
+        'imageUrl': imageUrl,
+        'createdAt': DateTime.now().toIso8601String(),
+        'userId': user?.uid,
+      });
 
       setState(() => _loading = false);
       if (!mounted) return;
@@ -209,7 +249,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                       DropdownMenuItem(value: 'Other', child: Text('Other', style: TextStyle(color: Colors.white))),
                     ],
                     dropdownColor: Colors.black,
-                    onChanged: (val) => setState(() => selectedCategory = val!),
+                    onChanged: (val) {
+                      setState(() => selectedCategory = val!);
+                      saveDraft();
+                    },
                     style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 20),
@@ -222,14 +265,20 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                       items: idTypes.map((id) {
                         return DropdownMenuItem(value: id, child: Text(id, style: const TextStyle(color: Colors.white)));
                       }).toList(),
-                      onChanged: (val) => setState(() => selectedIDType = val),
+                      onChanged: (val) {
+                        setState(() => selectedIDType = val);
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       validator: (val) => val == null || val.isEmpty ? 'Please select ID type' : null,
                     ),
                     const SizedBox(height: 10),
                     if (selectedIDType == 'School ID' || selectedIDType == 'Employee ID') ...[
                       TextFormField(
-                        onChanged: (val) => institution = val,
+                        onChanged: (val) {
+                          institution = val;
+                          saveDraft();
+                        },
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: selectedIDType == 'School ID'
@@ -241,7 +290,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                       ),
                     ],
                     TextFormField(
-                      onChanged: (val) => name = val,
+                      onChanged: (val) {
+                        name = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Name on ID (if visible)',
@@ -251,7 +303,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                     ),
                   ] else if (selectedCategory == 'Person') ...[
                     TextFormField(
-                      onChanged: (val) => name = val,
+                      onChanged: (val) {
+                        name = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Name (if known)',
@@ -261,7 +316,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
-                      onChanged: (val) => description = val,
+                      onChanged: (val) {
+                        description = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Description/Distinguishing Features',
@@ -271,7 +329,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                     ),
                   ] else ...[
                     TextFormField(
-                      onChanged: (val) => description = val,
+                      onChanged: (val) {
+                        description = val;
+                        saveDraft();
+                      },
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Item Description',
@@ -282,7 +343,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                   ],
                   const SizedBox(height: 10),
                   TextFormField(
-                    onChanged: (val) => location = val,
+                    onChanged: (val) {
+                      location = val;
+                      saveDraft();
+                    },
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                       labelText: 'Where was it found?',
@@ -308,7 +372,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                             firstDate: DateTime(2000),
                             lastDate: DateTime.now(),
                           );
-                          if (picked != null) setState(() => foundDate = picked);
+                          if (picked != null) {
+                            setState(() => foundDate = picked);
+                            saveDraft();
+                          }
                         },
                       ),
                     ],
