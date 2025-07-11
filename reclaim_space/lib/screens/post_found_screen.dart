@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// import '../services/post_found_firebase.dart'; // Implement this service as needed
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import '../services/image_upload_service.dart';
 
 class PostSuccessScreen extends StatelessWidget {
   final String message;
@@ -97,10 +99,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
       if (selectedCategory == '') selectedCategory = 'ID';
       selectedIDType = prefs.getString('found_selectedIDType');
       if (selectedIDType == '') selectedIDType = null;
-      institution = prefs.getString('found_institution') ?? null;
-      name = prefs.getString('found_name') ?? null;
-      description = prefs.getString('found_description') ?? null;
-      location = prefs.getString('found_location') ?? null;
+      institution = prefs.getString('found_institution');
+      name = prefs.getString('found_name');
+      description = prefs.getString('found_description');
+      location = prefs.getString('found_location');
       final dateStr = prefs.getString('found_foundDate');
       foundDate = (dateStr != null && dateStr.isNotEmpty) ? DateTime.tryParse(dateStr) : null;
     });

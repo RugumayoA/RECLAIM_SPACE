@@ -4,10 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/image_upload_service.dart';
 import '../services/post_lost_firebase.dart';
 import 'post_found_screen.dart';
-// import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
@@ -62,10 +59,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
       if (selectedCategory == '') selectedCategory = 'ID';
       selectedIDType = prefs.getString('lost_selectedIDType');
       if (selectedIDType == '') selectedIDType = null;
-      institution = prefs.getString('lost_institution') ?? null;
-      name = prefs.getString('lost_name') ?? null;
-      age = prefs.getString('lost_age') ?? null;
-      location = prefs.getString('lost_location') ?? null;
+      institution = prefs.getString('lost_institution');
+      name = prefs.getString('lost_name');
+      age = prefs.getString('lost_age');
+      location = prefs.getString('lost_location');
     });
   }
 
