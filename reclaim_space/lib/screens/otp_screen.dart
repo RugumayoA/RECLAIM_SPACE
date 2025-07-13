@@ -34,15 +34,19 @@ class _OTPScreenState extends State<OTPScreen> {
         smsCode: otp,
       );
 
-      final userCred =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCred = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
 
       // After verifying OTP, go to password setup
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => SignupPasswordScreen(
-            email: userCred.user!.phoneNumber ?? '', // dummy string for email param
+            email:
+                userCred.user!.phoneNumber ??
+                '', // dummy string for email param
+            name: '', // Provide an appropriate value for 'name'
             isPhone: true,
           ),
         ),

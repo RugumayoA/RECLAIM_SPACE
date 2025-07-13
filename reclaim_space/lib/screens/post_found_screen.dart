@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../services/image_upload_service.dart';
+import 'notifications_screen.dart'; // Added import for NotificationsScreen
+import '../services/post_found_firebase.dart';
 
 class PostSuccessScreen extends StatelessWidget {
   final String message;
@@ -153,59 +155,39 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     setState(() => _loading = true);
     try {
       final imageResult = await uploadImageWithHash(imageFile);
-      final user = FirebaseAuth.instance.currentUser;
-      await FirebaseFirestore.instance.collection('found_items').add({
-        'type': selectedCategory,
-        'subType': selectedIDType,
-        'institution': institution,
-        'description': description,
-        'location': location,
-        'foundDate': foundDate?.toIso8601String(),
-        'imageUrl': imageResult['url'],
-        'imageHash': imageResult['hash'],
-        'createdAt': DateTime.now().toIso8601String(),
-        'uid': user?.uid,
-      });
-
+      await PostFoundService.uploadFoundPost(
+        type: selectedCategory,
+        subType: selectedIDType,
+        institution: institution,
+        details: {
+          'name': name ?? '',
+          'description': description ?? '',
+        },
+        imageUrl: imageResult['url'] ?? '',
+        imageHash: imageResult['hash'] ?? '',
+        location: location,
+        foundDate: foundDate?.toIso8601String(),
+      );
       setState(() => _loading = false);
       if (!mounted) return;
-      /*
-      // Fetch the latest found item for this user
-      final user = FirebaseAuth.instance.currentUser;
-      final foundQuery = await FirebaseFirestore.instance
-          .collection('found_items')
-          .where('uid', isEqualTo: user?.uid)
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .get();
-      if (foundQuery.docs.isNotEmpty) {
-        final foundDoc = foundQuery.docs.first;
-        final foundData = foundDoc.data();
-        if (foundData['matched'] == true && foundData['matchedWith'] != null) {
-          // Fetch the matched lost item
-          final lostDoc = await FirebaseFirestore.instance
-              .collection('lost_items')
-              .doc(foundData['matchedWith'])
-              .get();
-          final lostData = lostDoc.data();
-          if (lostData != null) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Match Found!'),
-                content: Text('A lost item matches your found post!\n\nType: \\${lostData['type']}\nSubType: \\${lostData['subType'] ?? ''}\nInstitution: \\${lostData['institution'] ?? ''}\nName: \\${lostData['details']?['name'] ?? ''}'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          }
-        }
-      }
-      */
+      // Show a popup (Snackbar) with a button to go to notifications
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Found item posted! Check your notifications.'),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+            textColor: Colors.yellowAccent,
+          ),
+        ),
+      );
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -217,7 +199,7 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     } catch (e) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text('Error:  e.toString()}')),
       );
     }
   }
@@ -290,6 +272,18 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                         validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
                       ),
                     ],
+                    TextFormField(
+                      onChanged: (val) {
+                        name = val;
+                        saveDraft();
+                      },
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Name on ID',
+                        labelStyle: TextStyle(color: Colors.white),
+                      ),
+                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name on the ID' : null,
+                    ),
                   ] else if (selectedCategory == 'Person') ...[
                     TextFormField(
                       onChanged: (val) {

@@ -15,6 +15,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
 
     // Wait for 2 seconds, then go to SplashScreen
     Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const SplashScreen()),
