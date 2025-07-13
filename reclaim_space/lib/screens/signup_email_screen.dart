@@ -11,9 +11,17 @@ class SignupEmailScreen extends StatefulWidget {
 
 class _SignupEmailScreenState extends State<SignupEmailScreen> {
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   void _continue() {
     final email = _emailController.text.trim();
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your full name')),
+      );
+      return;
+    }
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid email address')),
@@ -23,7 +31,7 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => SignupPasswordScreen(email: email)),
+      MaterialPageRoute(builder: (_) => SignupPasswordScreen(email: email, name: name)),
     );
   }
 
@@ -52,6 +60,21 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
                 style: TextStyle(color: Colors.white70, fontSize: 20),
               ),
               const SizedBox(height: 40),
+              TextField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.yellowAccent),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.white),

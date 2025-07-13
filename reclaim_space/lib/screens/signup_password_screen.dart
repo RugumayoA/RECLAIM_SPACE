@@ -4,11 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
 class SignupPasswordScreen extends StatefulWidget {
   final String email;
+  final String name;
   final bool isPhone; // NEW
 
   const SignupPasswordScreen({
     super.key,
     required this.email,
+    required this.name,
     this.isPhone = false,
   });
 
@@ -22,7 +24,6 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
   bool _loading = false;
 
   void _createAccount() async {
-    print('Signup button pressed');
     final p1 = _pass1.text.trim();
     final p2 = _pass2.text.trim();
 
@@ -47,23 +48,23 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
       if (widget.isPhone) {
         user = FirebaseAuth.instance.currentUser;
         await user!.updatePassword(p1);
+        await user.updateDisplayName(widget.name);
       } else {
         final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: widget.email,
           password: p1,
         );
         user = cred.user;
+        await user?.updateDisplayName(widget.name);
       }
-
-      print('User created: ${user?.uid}');
+      await user?.reload();
 
       if (user != null) {
         // Save user in Firestore
-        print('Writing user to Firestore...');
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'email': widget.email,
-          'name': '', //asking for name later or in profile update screen
+          'name': widget.name,
           'photoUrl': '',
           'role': 'user',
           'isActive': true,
@@ -72,7 +73,6 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
           'created_at': Timestamp.now(),
           'lastLogin': Timestamp.now(),
         });
-        print('User written to Firestore.');
 
         if (mounted) {
           // Go to home screen
@@ -84,14 +84,12 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
         }
       }
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Account creation failed')),
         );
       }
     } catch (e) {
-      print('Unexpected error: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Unexpected error: ${e.toString()}')),
@@ -106,7 +104,6 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('SignupPasswordScreen build called');
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -145,7 +142,6 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
                 onPressed: _loading
                     ? null
                     : () {
-                        print('Button pressed');
                         _createAccount();
                       },
                 style: ElevatedButton.styleFrom(
