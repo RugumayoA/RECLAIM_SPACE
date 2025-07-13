@@ -49,6 +49,7 @@ class _PostStoryScreenState extends State<PostStoryScreen> {
 
       if (doc.exists) {
         final data = doc.data()!;
+        if (!mounted) return;
         setState(() {
           _postData = data;
           _isLoading = false;
@@ -61,6 +62,7 @@ class _PostStoryScreenState extends State<PostStoryScreen> {
               .doc(data['uid'])
               .get();
           if (userDoc.exists) {
+            if (!mounted) return;
             setState(() {
               _userName = userDoc.data()?['displayName'] ?? 'Unknown User';
             });
@@ -68,6 +70,7 @@ class _PostStoryScreenState extends State<PostStoryScreen> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
