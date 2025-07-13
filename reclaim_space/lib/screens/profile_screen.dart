@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'splash_screen.dart';
 import 'dart:convert';
+import 'post_story_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,7 +17,10 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int _tabIndex = 0;
   String? profilePicUrl;
+  String? userName;
   bool _loadingPic = false;
+  bool _isSelectionMode = false;
+  Set<String> _selectedPosts = {};
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
     setState(() {
       profilePicUrl = userDoc.data()?['profilePicUrl'];
+      userName = userDoc.data()?['displayName'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'User';
     });
   }
 
@@ -38,20 +43,250 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() => _loadingPic = true);
-      // For demo: just use local file path or bytes, in production upload to storage
-      String url = picked.path;
-      if (kIsWeb) {
-        // On web, use bytes as a data URL
-        final bytes = await picked.readAsBytes();
-        url = 'data:image/png;base64,${base64Encode(bytes)}';
+      try {
+        // For demo: just use local file path or bytes, in production upload to storage
+        String url = picked.path;
+        if (kIsWeb) {
+          // On web, use bytes as a data URL
+          final bytes = await picked.readAsBytes();
+          url = 'data:image/png;base64,${base64Encode(bytes)}';
+        }
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+            'profilePicUrl': url,
+            'displayName': userName ?? 'User',
+          }, SetOptions(merge: true));
+          
+          setState(() {
+            profilePicUrl = url;
+            _loadingPic = false;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile picture updated successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        setState(() => _loadingPic = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating profile picture: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({'profilePicUrl': url}, SetOptions(merge: true));
-      setState(() {
-        profilePicUrl = url;
-        _loadingPic = false;
-      });
     }
+  }
+
+  Future<void> _deletePost(String postId, String collection, String postType) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Text(
+            'Delete $postType Post',
+            style: const TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Are you sure you want to delete this $postType post? This action cannot be undone.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // Delete the post
+      await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(postId)
+          .delete();
+
+      // If the post was matched, also delete the match record
+      final matchQuery = await FirebaseFirestore.instance
+          .collection('matches')
+          .where(collection == 'lost_items' ? 'lostItemId' : 'foundItemId', isEqualTo: postId)
+          .get();
+
+      if (matchQuery.docs.isNotEmpty) {
+        final batch = FirebaseFirestore.instance.batch();
+        for (final matchDoc in matchQuery.docs) {
+          batch.delete(matchDoc.reference);
+        }
+        await batch.commit();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$postType post deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error deleting post: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting $postType post'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteSelectedPosts() async {
+    if (_selectedPosts.isEmpty) return;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final collection = _tabIndex == 0 ? 'lost_items' : 'found_items';
+    final postType = _tabIndex == 0 ? 'Lost' : 'Found';
+
+    try {
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Text(
+            'Delete ${_selectedPosts.length} $postType Posts',
+            style: const TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Are you sure you want to delete ${_selectedPosts.length} $postType post${_selectedPosts.length == 1 ? '' : 's'}? This action cannot be undone.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      // Delete all selected posts
+      final batch = FirebaseFirestore.instance.batch();
+      for (final postId in _selectedPosts) {
+        final docRef = FirebaseFirestore.instance
+            .collection(collection)
+            .doc(postId);
+        batch.delete(docRef);
+      }
+      await batch.commit();
+
+      // Delete associated match records
+      final matchQuery = await FirebaseFirestore.instance
+          .collection('matches')
+          .where(collection == 'lost_items' ? 'lostItemId' : 'foundItemId', whereIn: _selectedPosts.toList())
+          .get();
+
+      if (matchQuery.docs.isNotEmpty) {
+        final matchBatch = FirebaseFirestore.instance.batch();
+        for (final matchDoc in matchQuery.docs) {
+          matchBatch.delete(matchDoc.reference);
+        }
+        await matchBatch.commit();
+      }
+
+      setState(() {
+        _selectedPosts.clear();
+        _isSelectionMode = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_selectedPosts.length} $postType post${_selectedPosts.length == 1 ? '' : 's'} deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error deleting posts: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting $postType posts'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedPosts.clear();
+      }
+    });
+  }
+
+  void _togglePostSelection(String postId) {
+    setState(() {
+      if (_selectedPosts.contains(postId)) {
+        _selectedPosts.remove(postId);
+      } else {
+        _selectedPosts.add(postId);
+      }
+    });
+  }
+
+  void _selectAllPosts(List<QueryDocumentSnapshot> docs) {
+    setState(() {
+      if (_selectedPosts.length == docs.length) {
+        _selectedPosts.clear();
+      } else {
+        _selectedPosts = docs.map((doc) => doc.id).toSet();
+      }
+    });
   }
 
   @override
@@ -59,33 +294,124 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Profile'),
+        title: Text(_isSelectionMode ? 'Select Posts' : 'Your Profile'),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        actions: [
+          if (!_isSelectionMode) ...[
+            IconButton(
+              icon: const Icon(Icons.select_all),
+              onPressed: _toggleSelectionMode,
+              tooltip: 'Select posts',
+            ),
+          ] else ...[
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection(_tabIndex == 0 ? 'lost_items' : 'found_items')
+                  .where('uid', isEqualTo: uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final docs = snapshot.data?.docs ?? [];
+                final allSelected = _selectedPosts.length == docs.length && docs.isNotEmpty;
+                
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => _selectAllPosts(docs),
+                      child: Text(
+                        allSelected ? 'Deselect all' : 'Select all',
+                        style: const TextStyle(color: Colors.yellowAccent),
+                      ),
+                    ),
+                    if (_selectedPosts.isNotEmpty)
+                      TextButton(
+                        onPressed: _deleteSelectedPosts,
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: _toggleSelectionMode,
+                      tooltip: 'Cancel selection',
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ],
       ),
       drawer: Drawer(
         child: ListView(
           children: [
             DrawerHeader(
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: pickProfilePic,
-                    child: CircleAvatar(
-                      radius: 36,
-                      backgroundImage: profilePicUrl != null
-                          ? (profilePicUrl!.startsWith('data:')
-                              ? MemoryImage(base64Decode(profilePicUrl!.split(',').last))
-                              : NetworkImage(profilePicUrl!) as ImageProvider)
-                          : null,
-                      child: _loadingPic
-                          ? const CircularProgressIndicator()
-                          : (profilePicUrl == null ? const Icon(Icons.person, size: 36) : null),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: pickProfilePic,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 34, // reduced from 40
+                            backgroundImage: profilePicUrl != null
+                                ? (profilePicUrl!.startsWith('data:')
+                                    ? MemoryImage(base64Decode(profilePicUrl!.split(',').last))
+                                    : NetworkImage(profilePicUrl!) as ImageProvider)
+                                : null,
+                            child: _loadingPic
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : (profilePicUrl == null ? const Icon(Icons.person, size: 34, color: Colors.white) : null),
+                          ),
+                          if (!_loadingPic)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.yellowAccent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 14, // reduced from 16
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Edit Profile Picture'),
-                ],
+                    const SizedBox(height: 8), // reduced from 12
+                    Text(
+                      FirebaseAuth.instance.currentUser?.displayName ?? 'User',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16, // reduced from 18
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2), // reduced from 4
+                    Text(
+                      'Tap to change photo',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 11, // reduced from 12
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             ListTile(
@@ -155,19 +481,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     ...docs.map((doc) {
                       final data = doc.data() as Map<String, dynamic>;
+                      final isSelected = _selectedPosts.contains(doc.id);
+                      
                       return Card(
-                        color: Colors.grey[900],
+                        color: isSelected ? Colors.yellowAccent.withAlpha(136) : Colors.grey[900],
                         child: ListTile(
-                          leading: data['imageUrl'] != null
-                              ? (data['imageUrl'].toString().startsWith('http')
-                                  ? Image.network(data['imageUrl'], width: 48, height: 48, fit: BoxFit.cover)
-                                  : null)
-                              : null,
+                          leading: _isSelectionMode
+                              ? Checkbox(
+                                  value: isSelected,
+                                  onChanged: (value) => _togglePostSelection(doc.id),
+                                  activeColor: Colors.yellowAccent,
+                                )
+                              : (data['imageUrl'] != null
+                                  ? (data['imageUrl'].toString().startsWith('http')
+                                      ? Image.network(data['imageUrl'], width: 48, height: 48, fit: BoxFit.cover)
+                                      : null)
+                                  : null),
                           title: Text(data['subType'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
                           subtitle: Text(data['type'], style: const TextStyle(color: Colors.white70)),
-                          trailing: data['matched'] == true
-                              ? const Icon(Icons.verified, color: Colors.green)
-                              : null,
+                          onTap: () {
+                            if (_isSelectionMode) {
+                              _togglePostSelection(doc.id);
+                            } else {
+                              // Navigate to story view
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PostStoryScreen(
+                                    postId: doc.id,
+                                    collection: _tabIndex == 0 ? 'lost_items' : 'found_items',
+                                    postType: _tabIndex == 0 ? 'Lost' : 'Found',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          onLongPress: () {
+                            if (!_isSelectionMode) {
+                              _toggleSelectionMode();
+                              _togglePostSelection(doc.id);
+                            }
+                          },
+                          trailing: _isSelectionMode
+                              ? (data['matched'] == true
+                                  ? const Icon(Icons.verified, color: Colors.green)
+                                  : null)
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (data['matched'] == true)
+                                      const Icon(Icons.verified, color: Colors.green),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert, color: Colors.white70),
+                                      onSelected: (value) {
+                                        if (value == 'delete') {
+                                          _deletePost(
+                                            doc.id,
+                                            _tabIndex == 0 ? 'lost_items' : 'found_items',
+                                            _tabIndex == 0 ? 'Lost' : 'Found',
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete, color: Colors.red),
+                                              SizedBox(width: 8),
+                                              Text('Delete Post'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                         ),
                       );
                     }),
@@ -176,36 +565,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: EdgeInsets.symmetric(vertical: 8.0),
                       child: Text('My Matches', style: TextStyle(color: Colors.yellowAccent, fontSize: 18)),
                     ),
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('matches')
-                          .where('lostUserId', isEqualTo: uid)
-                          .snapshots(),
-                      builder: (context, matchSnapshot) {
-                        if (!matchSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-                        final matches = matchSnapshot.data!.docs;
-                        if (matches.isEmpty) {
+                    FutureBuilder<List<QuerySnapshot>>(
+                      future: Future.wait([
+                        FirebaseFirestore.instance
+                            .collection('matches')
+                            .where('lostUserId', isEqualTo: uid)
+                            .get(),
+                        FirebaseFirestore.instance
+                            .collection('matches')
+                            .where('foundUserId', isEqualTo: uid)
+                            .get(),
+                      ]),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                        
+                        final lostMatches = snapshot.data![0].docs;
+                        final foundMatches = snapshot.data![1].docs;
+                        final allMatches = [...lostMatches, ...foundMatches];
+                        
+                        if (allMatches.isEmpty) {
                           return const Center(child: Text('No matches yet.', style: TextStyle(color: Colors.white70)));
                         }
+                        
                         return Column(
-                          children: matches.map((matchDoc) {
+                          children: allMatches.map((matchDoc) {
                             final match = matchDoc.data() as Map<String, dynamic>;
+                            final isUserLost = match['lostUserId'] == uid;
+                            final otherItemId = isUserLost ? match['foundItemId'] : match['lostItemId'];
+                            final otherCollection = isUserLost ? 'found_items' : 'lost_items';
+                            final matchType = isUserLost ? 'Found Item' : 'Lost Item';
+                            
                             return FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance.collection('found_items').doc(match['foundItemId']).get(),
-                              builder: (context, foundSnapshot) {
-                                if (!foundSnapshot.hasData) return const SizedBox.shrink();
-                                final foundData = foundSnapshot.data!.data() as Map<String, dynamic>?;
-                                if (foundData == null) return const SizedBox.shrink();
+                              future: FirebaseFirestore.instance.collection(otherCollection).doc(otherItemId).get(),
+                              builder: (context, otherSnapshot) {
+                                if (!otherSnapshot.hasData) return const SizedBox.shrink();
+                                final otherData = otherSnapshot.data!.data() as Map<String, dynamic>?;
+                                if (otherData == null) return const SizedBox.shrink();
                                 return Card(
                                   color: Colors.green[900],
                                   child: ListTile(
-                                    leading: foundData['imageUrl'] != null
-                                        ? (foundData['imageUrl'].toString().startsWith('http')
-                                            ? Image.network(foundData['imageUrl'], width: 48, height: 48, fit: BoxFit.cover)
+                                    leading: otherData['imageUrl'] != null
+                                        ? (otherData['imageUrl'].toString().startsWith('http')
+                                            ? Image.network(otherData['imageUrl'], width: 48, height: 48, fit: BoxFit.cover)
                                             : null)
                                         : null,
-                                    title: Text(foundData['subType'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-                                    subtitle: Text('Matched Found Item', style: const TextStyle(color: Colors.white70)),
+                                    title: Text(otherData['subType'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+                                    subtitle: Text('Matched $matchType', style: const TextStyle(color: Colors.white70)),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PostStoryScreen(
+                                            postId: otherItemId,
+                                            collection: otherCollection,
+                                            postType: isUserLost ? 'Found' : 'Lost',
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 );
                               },

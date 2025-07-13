@@ -240,6 +240,18 @@ class _PostLostScreenState extends State<PostLostScreen> {
                         validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
                       ),
                     ],
+                    TextFormField(
+                      onChanged: (val) {
+                        name = val;
+                        saveDraft();
+                      },
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Name on ID',
+                        labelStyle: TextStyle(color: Colors.white),
+                      ),
+                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name on the ID' : null,
+                    ),
                   ] else ...[
                     TextFormField(
                       onChanged: (val) {
