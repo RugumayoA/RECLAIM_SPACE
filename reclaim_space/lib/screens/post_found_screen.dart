@@ -132,8 +132,8 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     }
   }
 
-  Future<String> uploadImage(dynamic file) async {
-    return await ImageUploadService.uploadImage(file);
+  Future<Map<String, String>> uploadImageWithHash(dynamic file) async {
+    return await ImageUploadService.uploadImageWithHash(file);
   }
 
   Future<void> submit() async {
@@ -152,20 +152,19 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     }
     setState(() => _loading = true);
     try {
-      final imageUrl = await uploadImage(imageFile);
+      final imageResult = await uploadImageWithHash(imageFile);
       final user = FirebaseAuth.instance.currentUser;
-
       await FirebaseFirestore.instance.collection('found_items').add({
         'type': selectedCategory,
         'subType': selectedIDType,
         'institution': institution,
-        'name': name,
         'description': description,
         'location': location,
         'foundDate': foundDate?.toIso8601String(),
-        'imageUrl': imageUrl,
+        'imageUrl': imageResult['url'],
+        'imageHash': imageResult['hash'],
         'createdAt': DateTime.now().toIso8601String(),
-        'userId': user?.uid,
+        'uid': user?.uid,
       });
 
       setState(() => _loading = false);
@@ -291,18 +290,6 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                         validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
                       ),
                     ],
-                    TextFormField(
-                      onChanged: (val) {
-                        name = val;
-                        saveDraft();
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Name on ID (if visible)',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name on ID (if visible)' : null,
-                    ),
                   ] else if (selectedCategory == 'Person') ...[
                     TextFormField(
                       onChanged: (val) {

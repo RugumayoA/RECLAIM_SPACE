@@ -11,6 +11,7 @@ class PostFoundService {
     required String? institution, // school or org name
     required Map<String, dynamic> details, // name, description, etc.
     required String imageUrl, // download url from imgbb
+    required String imageHash, // hash of the image for matching
     required String? location,
     required String? foundDate,
   }) async {
@@ -24,6 +25,7 @@ class PostFoundService {
       'institution': institution,
       'details': details,
       'imageUrl': imageUrl,
+      'imageHash': imageHash,
       'location': location,
       'foundDate': foundDate,
       'matched': false,
@@ -41,10 +43,9 @@ class PostFoundService {
       bool isMatch = false;
       if (type == 'ID') {
         isMatch = (lost['subType'] == subType) &&
-                  (institution == null || lost['institution'] == institution) &&
-                  (details['name'] == null || lost['details']['name'] == details['name']);
+                  (institution == null || lost['institution'] == institution);
       } else if (type == 'Person') {
-        isMatch = (details['name'] != null && lost['details']['name'] == details['name']);
+        isMatch = (details['name'] != null && lost['name'] == details['name']);
       }
       if (isMatch) {
         // Mark both as matched
@@ -54,7 +55,7 @@ class PostFoundService {
         await _firestore.collection('matches').add({
           'lostItemId': doc.id,
           'foundItemId': foundDoc.id,
-          'lostUserId': lost['uid'],
+          'lostUserId': lost['uid'] ?? lost['userId'],
           'foundUserId': user.uid,
           'matchScore': 1.0,
           'status': 'pending',
@@ -67,7 +68,7 @@ class PostFoundService {
           'timestamp': FieldValue.serverTimestamp(),
           'seen': false,
         });
-        await _firestore.collection('notifications').doc(lost['uid']).collection('items').add({
+        await _firestore.collection('notifications').doc(lost['uid'] ?? lost['userId']).collection('items').add({
           'title': 'Match found!',
           'message': 'A possible match for your lost item was found!',
           'timestamp': FieldValue.serverTimestamp(),

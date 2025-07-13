@@ -89,8 +89,8 @@ class _PostLostScreenState extends State<PostLostScreen> {
     }
   }
 
-  Future<String> uploadImage(dynamic file) async {
-    return await ImageUploadService.uploadImage(file);
+  Future<Map<String, String>> uploadImageWithHash(dynamic file) async {
+    return await ImageUploadService.uploadImageWithHash(file);
   }
 
   Future<void> submit() async {
@@ -103,7 +103,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
     }
     setState(() => _loading = true);
     try {
-      final imageUrl = await uploadImage(imageFile);
+      final imageResult = await uploadImageWithHash(imageFile);
       await PostLostService.uploadLostPost(
         type: selectedCategory,
         subType: selectedIDType,
@@ -113,7 +113,8 @@ class _PostLostScreenState extends State<PostLostScreen> {
           'age': age ?? '',
           'location': location ?? '',
         },
-        imageUrl: imageUrl,
+        imageUrl: imageResult['url']!,
+        imageHash: imageResult['hash']!,
       );
       await clearDraft();
       setState(() => _loading = false);
