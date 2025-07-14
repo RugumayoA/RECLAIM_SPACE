@@ -21,11 +21,24 @@ class SignupPasswordScreen extends StatefulWidget {
 class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
   final TextEditingController _pass1 = TextEditingController();
   final TextEditingController _pass2 = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController(); // NEW
   bool _loading = false;
 
   void _createAccount() async {
     final p1 = _pass1.text.trim();
     final p2 = _pass2.text.trim();
+    final phoneInput = _phoneController.text.trim();
+    String phone = phoneInput.replaceAll('+', '');
+    if (phone.startsWith('07')) {
+      phone = '256' + phone.substring(1);
+    }
+    // Phone validation (Uganda format, can be improved)
+    if (phone.isEmpty || !RegExp(r'^2567\d{8}').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid Ugandan phone number (e.g. 2567XXXXXXXX)')),
+      );
+      return;
+    }
 
     if (p1.length < 6 || !RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(p1)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -72,6 +85,7 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
           'auth_method': widget.isPhone ? 'phone' : 'email',
           'created_at': Timestamp.now(),
           'lastLogin': Timestamp.now(),
+          'phoneNumber': phone, // Always formatted as 2567XXXXXXX
         });
 
         if (mounted) {
@@ -118,6 +132,18 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
                 style: TextStyle(color: Colors.yellowAccent, fontSize: 24),
               ),
               const SizedBox(height: 30),
+              TextField(
+                controller: _phoneController, // NEW
+                keyboardType: TextInputType.phone,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  hintText: '+2567XXXXXXXX',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(color: Colors.white38),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _pass1,
                 obscureText: true,
