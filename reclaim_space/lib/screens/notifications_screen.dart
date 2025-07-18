@@ -200,7 +200,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               builder: (context, snapshot) {
                 final docs = snapshot.data?.docs ?? [];
                 final allSelected = _selectedNotifications.length == docs.length && docs.isNotEmpty;
-                
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -248,15 +247,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
           }
 
-          // Check if all notifications are selected
-          final allSelected = _selectedNotifications.length == docs.length && docs.isNotEmpty;
+          // Remove any duplicate or unused allSelected variable here
+          // (No need to declare allSelected again in the body if not used)
 
           return ListView(
             children: docs.map((doc) {
               final data = doc.data() as Map<String, dynamic>;
               final isRead = data['seen'] == true;
               final isSelected = _selectedNotifications.contains(doc.id);
-              
               return ListTile(
                 leading: _isSelectionMode
                     ? Checkbox(
@@ -273,7 +271,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       ),
                 title: Text(
-                  data['title'], 
+                  data['title'],
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
@@ -283,7 +281,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data['message'], 
+                      data['message'],
                       style: TextStyle(
                         color: isRead ? Colors.white70 : Colors.white,
                       ),
@@ -311,7 +309,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     _toggleNotificationSelection(doc.id);
                   }
                 },
-                tileColor: isSelected 
+                tileColor: isSelected
                     ? Colors.yellowAccent.withAlpha((255 * 0.2).toInt())
                     : (isRead ? null : Colors.grey[900]),
                 trailing: _isSelectionMode
