@@ -166,6 +166,33 @@ Thank you for using ReclaimSpace.''';
     print('Post created notification added for user ${user.uid}');
   }
 
+  static Future<void> uploadFoundPost({
+    required String type,
+    required String? subType,
+    required String? institution,
+    required Map<String, dynamic> details,
+    required String imageUrl,
+    required String imageHash,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    await _firestore.collection('found_items').add({
+      'uid': user.uid,
+      'type': type,
+      'subType': subType,
+      'institution': institution,
+      'details': details,
+      'imageUrl': imageUrl,
+      'imageHash': imageHash,
+      'matched': false,
+      'matchedWith': null,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Optionally, add a notification or other logic here
+  }
+
   static Future<void> sendSMSNotification(String phoneNumber, String message) async {
     final params = {
       'username': egosmsUsername,

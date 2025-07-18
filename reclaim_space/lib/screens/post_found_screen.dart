@@ -155,18 +155,18 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     setState(() => _loading = true);
     try {
       final imageResult = await uploadImageWithHash(imageFile);
-      await PostFoundService.uploadFoundPost(
+      await PostLostService.uploadFoundPost(
         type: selectedCategory,
         subType: selectedIDType,
         institution: institution,
         details: {
           'name': name ?? '',
           'description': description ?? '',
+          'location': location ?? '',
+          'foundDate': foundDate?.toIso8601String() ?? '',
         },
         imageUrl: imageResult['url'] ?? '',
         imageHash: imageResult['hash'] ?? '',
-        location: location,
-        foundDate: foundDate?.toIso8601String(),
       );
       setState(() => _loading = false);
       if (!mounted) return;
