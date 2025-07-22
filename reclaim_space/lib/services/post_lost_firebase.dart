@@ -95,14 +95,14 @@ class PostLostService {
         final lostEmail = lostUserDoc.data()?['email'] ?? '';
         // Compose SMS for lost user (who lost the item)
         final lostSms = '''ReclaimSpace:
-Dear User,
-A matching report has been found for your lost item.
+Dear $lostName,
+A matching report has been found for your lost $type .
 Contact $foundName (the finder) on $foundPhone, email: $foundEmail to proceed.
 Thank you for using ReclaimSpace.''';
         // Compose SMS for found user (who found the item)
         final foundSms = '''ReclaimSpace:
-Dear User,
-A matching report has been found for your found item.
+Dear $foundName,
+A matching report has been found for your reported $type.
 Contact $lostName (the loser) on $lostPhone, email: $lostEmail to proceed.
 Thank you for using ReclaimSpace.''';
         // Mark both as matched
