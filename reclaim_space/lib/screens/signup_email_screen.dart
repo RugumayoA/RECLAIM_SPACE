@@ -100,16 +100,16 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
                 child: const Text('Continue'),
               ),
               const SizedBox(height: 16),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    // TODO: Add login navigation
-                  },
-                  child: const Text(
-                    'Already have an account? Log in',
-                    style: TextStyle(color: Colors.white),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Already have an account?', style: TextStyle(color: Colors.white70)),
+                  SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                    child: Text('Log in', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 30),
               const Divider(color: Colors.white24),
@@ -133,26 +133,36 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
                 child: const Text('Continue with Phone'),
               ),
               const Spacer(),
-              const Center(
+              Center(
                 child: Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(
-                        text: 'Terms of Use',
-                        style: TextStyle(
-                          color: Colors.blueAccent,
-                          decoration: TextDecoration.underline,
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/terms'),
+                          child: Text(
+                            'Terms of Use',
+                            style: TextStyle(
+                              color: Colors.blueAccent,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                       TextSpan(
                         text: '  |  ',
                         style: TextStyle(color: Colors.white),
                       ),
-                      TextSpan(
-                        text: 'Privacy Policy',
-                        style: TextStyle(
-                          color: Colors.blueAccent,
-                          decoration: TextDecoration.underline,
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/privacy'),
+                          child: Text(
+                            'Privacy Policy',
+                            style: TextStyle(
+                              color: Colors.blueAccent,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ),
                     ],

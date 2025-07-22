@@ -8,6 +8,12 @@ import 'screens/post_found_verification_screen.dart';
 import 'screens/country_city_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/terms_screen.dart';
+import 'screens/privacy_policy_screen.dart';
+import 'screens/help_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/signup_email_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +55,12 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(), //navigation to home
         '/post-found-verification': (_) => const PostFoundVerificationScreen(),
         '/country-city': (context) => const CountryCityScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/terms': (context) => const TermsScreen(),
+        '/privacy': (context) => const PrivacyPolicyScreen(),
+        '/help': (context) => const HelpScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/signup-email': (context) => const SignupEmailScreen(),
       },
       // body: Center(
       // child: Text(
@@ -57,25 +69,6 @@ class MyApp extends StatelessWidget {
       // ),
       //   ),
       // ),
-    );
-  }
-}
-
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      backgroundColor: Colors.black,
-      body: const Center(
-        child: Text('Settings coming soon!', style: TextStyle(color: Colors.white70, fontSize: 20)),
-      ),
     );
   }
 }

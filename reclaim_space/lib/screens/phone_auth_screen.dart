@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer';
 // import 'signup_password_screen.dart';
 import 'otp_screen.dart';
 
@@ -31,12 +32,16 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       phoneNumber: phone,
       verificationCompleted: (PhoneAuthCredential credential) {
         // Auto-retrieval on Android
+        log('Phone verification completed automatically: $credential');
       },
       verificationFailed: (FirebaseAuthException e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Verification failed')),
-        );
-        setState(() => _loading = false);
+        log('Phone verification failed with error: ${e.code} - ${e.message}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Verification failed: ${e.message}')),
+          );
+          setState(() => _loading = false);
+        }
       },
       codeSent: (String verificationId, int? resendToken) {
         Navigator.push(

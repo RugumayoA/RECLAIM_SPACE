@@ -436,7 +436,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings & Privacy'),
-              onTap: () {},
+              onTap: () {
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Help / FAQ'),
+              onTap: () {
+                Navigator.pushNamed(context, '/help');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.logout),
@@ -478,29 +487,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 24),
               ToggleButtons(
-                isSelected: [_tabIndex == 0, _tabIndex == 1],
+                isSelected: [_tabIndex == 0, _tabIndex == 1, _tabIndex == 2],
                 onPressed: (i) => setState(() => _tabIndex = i),
-                children: const [Text('Lost'), Text('Found')],
+                children: const [Text('Lost'), Text('Found'), Text('Matches')],
                 color: Colors.white,
                 selectedColor: Colors.yellow,
                 fillColor: Colors.black54,
                 borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => setState(() => _tabIndex = 2),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _tabIndex == 2
-                      ? Colors.yellowAccent
-                      : Colors.grey[800],
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  textStyle: const TextStyle(fontSize: 14),
-                ),
-                child: const Text('Matches'),
               ),
             ],
           ),
@@ -628,9 +621,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 3,
-                              crossAxisSpacing: 4,
-                              mainAxisSpacing: 4,
-                              childAspectRatio: 0.75,
+                              crossAxisSpacing: 1, // reduced from 4
+                              mainAxisSpacing: 1, // reduced from 4
+                              childAspectRatio: 0.8, // slightly taller for IG style
                             ),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
@@ -685,7 +678,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   if (isMatched)
                                     const Positioned(
-                                      top: 6,
+                                      bottom: 6, // moved from top: 6
                                       right: 6,
                                       child: Icon(
                                         Icons.verified,
