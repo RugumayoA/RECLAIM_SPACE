@@ -31,10 +31,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> loadProfilePic() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
     setState(() {
       profilePicUrl = userDoc.data()?['profilePicUrl'];
-      userName = userDoc.data()?['displayName'] ?? FirebaseAuth.instance.currentUser?.displayName ?? 'User';
+      userName =
+          userDoc.data()?['displayName'] ??
+          FirebaseAuth.instance.currentUser?.displayName ??
+          'User';
     });
   }
 
@@ -57,12 +63,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'profilePicUrl': url,
             'displayName': userName ?? 'User',
           }, SetOptions(merge: true));
-          
+
           setState(() {
             profilePicUrl = url;
             _loadingPic = false;
           });
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -86,7 +92,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _deletePost(String postId, String collection, String postType) async {
+  Future<void> _deletePost(
+    String postId,
+    String collection,
+    String postType,
+  ) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -107,17 +117,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -134,7 +138,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // If the post was matched, also delete the match record
       final matchQuery = await FirebaseFirestore.instance
           .collection('matches')
-          .where(collection == 'lost_items' ? 'lostItemId' : 'foundItemId', isEqualTo: postId)
+          .where(
+            collection == 'lost_items' ? 'lostItemId' : 'foundItemId',
+            isEqualTo: postId,
+          )
           .get();
 
       if (matchQuery.docs.isNotEmpty) {
@@ -192,17 +199,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -223,7 +224,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Delete associated match records
       final matchQuery = await FirebaseFirestore.instance
           .collection('matches')
-          .where(collection == 'lost_items' ? 'lostItemId' : 'foundItemId', whereIn: _selectedPosts.toList())
+          .where(
+            collection == 'lost_items' ? 'lostItemId' : 'foundItemId',
+            whereIn: _selectedPosts.toList(),
+          )
           .get();
 
       if (matchQuery.docs.isNotEmpty) {
@@ -232,17 +236,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           matchBatch.delete(matchDoc.reference);
         }
         await matchBatch.commit();
-      }
-
-      setState(() {
         _selectedPosts.clear();
         _isSelectionMode = false;
-      });
+      }
+      ;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_selectedPosts.length} $postType post${_selectedPosts.length == 1 ? '' : 's'} deleted successfully'),
+            content: Text(
+              '${_selectedPosts.length} $postType post${_selectedPosts.length == 1 ? '' : 's'} deleted successfully',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -312,8 +316,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 final docs = snapshot.data?.docs ?? [];
-                final allSelected = _selectedPosts.length == docs.length && docs.isNotEmpty;
-                
+                final allSelected =
+                    _selectedPosts.length == docs.length && docs.isNotEmpty;
+
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -348,9 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: ListView(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-              ),
+              decoration: BoxDecoration(color: Colors.grey[900]),
               child: SafeArea(
                 bottom: false,
                 child: Column(
@@ -365,12 +368,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             radius: 34, // reduced from 40
                             backgroundImage: profilePicUrl != null
                                 ? (profilePicUrl!.startsWith('data:')
-                                    ? MemoryImage(base64Decode(profilePicUrl!.split(',').last))
-                                    : NetworkImage(profilePicUrl!) as ImageProvider)
+                                      ? MemoryImage(
+                                          base64Decode(
+                                            profilePicUrl!.split(',').last,
+                                          ),
+                                        )
+                                      : NetworkImage(profilePicUrl!)
+                                            as ImageProvider)
                                 : null,
                             child: _loadingPic
-                                ? const CircularProgressIndicator(color: Colors.white)
-                                : (profilePicUrl == null ? const Icon(Icons.person, size: 34, color: Colors.white) : null),
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : (profilePicUrl == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 34,
+                                          color: Colors.white,
+                                        )
+                                      : null),
                           ),
                           if (!_loadingPic)
                             Positioned(
@@ -381,7 +397,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.yellowAccent,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
                                 child: const Icon(
                                   Icons.camera_alt,
@@ -448,8 +467,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     .where('uid', isEqualTo: uid)
                     .snapshots(),
                 builder: (context, snapshot) {
-                  final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return Text('$count Posts', style: const TextStyle(color: Colors.white, fontSize: 18));
+                  final count = snapshot.hasData
+                      ? snapshot.data!.docs.length
+                      : 0;
+                  return Text(
+                    '$count Posts',
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                  );
                 },
               ),
               const SizedBox(width: 24),
@@ -462,82 +486,237 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fillColor: Colors.black54,
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => setState(() => _tabIndex = 2),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _tabIndex == 2
+                      ? Colors.yellowAccent
+                      : Colors.grey[800],
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 14),
+                ),
+                child: const Text('Matches'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection(_tabIndex == 0 ? 'lost_items' : 'found_items')
-                  .where('uid', isEqualTo: uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                final docs = snapshot.data!.docs;
-                if (docs.isEmpty) {
-                  return const Center(child: Text('No posts yet.', style: TextStyle(color: Colors.white70)));
-                }
-                return ListView(
-                  children: [
-                    ...docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final isSelected = _selectedPosts.contains(doc.id);
-                      
-                      return Card(
-                        color: isSelected ? Colors.yellowAccent.withAlpha(136) : Colors.grey[900],
-                        child: ListTile(
-                          leading: _isSelectionMode
-                              ? Checkbox(
-                                  value: isSelected,
-                                  onChanged: (value) => _togglePostSelection(doc.id),
-                                  activeColor: Colors.yellowAccent,
-                                )
-                              : (data['imageUrl'] != null
-                                  ? (data['imageUrl'].toString().startsWith('http')
-                                      ? Image.network(data['imageUrl'], width: 48, height: 48, fit: BoxFit.cover)
-                                      : null)
-                                  : null),
-                          title: Text(data['subType'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-                          subtitle: Text(data['type'], style: const TextStyle(color: Colors.white70)),
-                          onTap: () {
-                            if (_isSelectionMode) {
-                              _togglePostSelection(doc.id);
-                            } else {
-                              // Navigate to story view
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => PostStoryScreen(
-                                    postId: doc.id,
-                                    collection: _tabIndex == 0 ? 'lost_items' : 'found_items',
-                                    postType: _tabIndex == 0 ? 'Lost' : 'Found',
+            child: _tabIndex == 2
+                ? FutureBuilder<List<QuerySnapshot>>(
+                    future: Future.wait([
+                      FirebaseFirestore.instance
+                          .collection('matches')
+                          .where('lostUserId', isEqualTo: uid)
+                          .get(),
+                      FirebaseFirestore.instance
+                          .collection('matches')
+                          .where('foundUserId', isEqualTo: uid)
+                          .get(),
+                    ]),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData)
+                        return const Center(child: CircularProgressIndicator());
+                      final lostMatches = snapshot.data![0].docs;
+                      final foundMatches = snapshot.data![1].docs;
+                      final allMatches = [...lostMatches, ...foundMatches];
+                      if (allMatches.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No matches yet.',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        );
+                      }
+                      return ListView(
+                        children: allMatches.map((matchDoc) {
+                          final match = matchDoc.data() as Map<String, dynamic>;
+                          final isUserLost = match['lostUserId'] == uid;
+                          final otherItemId = isUserLost
+                              ? match['foundItemId']
+                              : match['lostItemId'];
+                          final otherCollection = isUserLost
+                              ? 'found_items'
+                              : 'lost_items';
+                          final matchType = isUserLost
+                              ? 'Found Item'
+                              : 'Lost Item';
+                          return FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection(otherCollection)
+                                .doc(otherItemId)
+                                .get(),
+                            builder: (context, otherSnapshot) {
+                              if (!otherSnapshot.hasData)
+                                return const SizedBox.shrink();
+                              final otherData =
+                                  otherSnapshot.data!.data()
+                                      as Map<String, dynamic>?;
+                              if (otherData == null)
+                                return const SizedBox.shrink();
+                              return Card(
+                                color: Colors.green[900],
+                                child: ListTile(
+                                  leading: otherData['imageUrl'] != null
+                                      ? (otherData['imageUrl']
+                                                .toString()
+                                                .startsWith('http')
+                                            ? Image.network(
+                                                otherData['imageUrl'],
+                                                width: 48,
+                                                height: 48,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : null)
+                                      : null,
+                                  title: Text(
+                                    otherData['subType'] ?? 'Unknown',
+                                    style: const TextStyle(color: Colors.white),
                                   ),
+                                  subtitle: Text(
+                                    'Matched $matchType',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PostStoryScreen(
+                                          postId: otherItemId,
+                                          collection: otherCollection,
+                                          postType: isUserLost
+                                              ? 'Found'
+                                              : 'Lost',
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               );
-                            }
-                          },
-                          onLongPress: () {
-                            if (!_isSelectionMode) {
-                              _toggleSelectionMode();
-                              _togglePostSelection(doc.id);
-                            }
-                          },
-                          trailing: _isSelectionMode
-                              ? (data['matched'] == true
-                                  ? const Icon(Icons.verified, color: Colors.green)
-                                  : null)
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (data['matched'] == true)
-                                      const Icon(Icons.verified, color: Colors.green),
-                                    PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_vert, color: Colors.white70),
+                            },
+                          );
+                        }).toList(),
+                      );
+                    },
+                  )
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection(
+                          _tabIndex == 0 ? 'lost_items' : 'found_items',
+                        )
+                        .where('uid', isEqualTo: uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData)
+                        return const Center(child: CircularProgressIndicator());
+                      final docs = snapshot.data!.docs;
+                      if (docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No posts yet.',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        );
+                      }
+                      return GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 4,
+                              mainAxisSpacing: 4,
+                              childAspectRatio: 0.75,
+                            ),
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final doc = docs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final isSelected = _selectedPosts.contains(doc.id);
+                          final isMatched = data['matched'] == true;
+                          return GestureDetector(
+                            onTap: () {
+                              if (_isSelectionMode) {
+                                _togglePostSelection(doc.id);
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PostStoryScreen(
+                                      postId: doc.id,
+                                      collection: _tabIndex == 0
+                                          ? 'lost_items'
+                                          : 'found_items',
+                                      postType: _tabIndex == 0
+                                          ? 'Lost'
+                                          : 'Found',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            onLongPress: () {
+                              if (!_isSelectionMode) {
+                                _toggleSelectionMode();
+                                _togglePostSelection(doc.id);
+                              }
+                            },
+                            child: Card(
+                              color: isSelected
+                                  ? Colors.yellowAccent.withAlpha(136)
+                                  : Colors.grey[900],
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child:
+                                        data['imageUrl'] != null &&
+                                            data['imageUrl']
+                                                .toString()
+                                                .startsWith('http')
+                                        ? Image.network(
+                                            data['imageUrl'],
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(color: Colors.black12),
+                                  ),
+                                  if (isMatched)
+                                    const Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: Icon(
+                                        Icons.verified,
+                                        color: Colors.green,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  if (_isSelectionMode)
+                                    Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Checkbox(
+                                        value: isSelected,
+                                        onChanged: (value) =>
+                                            _togglePostSelection(doc.id),
+                                        activeColor: Colors.yellowAccent,
+                                      ),
+                                    ),
+                                  Align(
+                                    alignment: Alignment.topRight,
+                                    child: PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: Colors.white70,
+                                      ),
                                       onSelected: (value) {
                                         if (value == 'delete') {
                                           _deletePost(
                                             doc.id,
-                                            _tabIndex == 0 ? 'lost_items' : 'found_items',
+                                            _tabIndex == 0
+                                                ? 'lost_items'
+                                                : 'found_items',
                                             _tabIndex == 0 ? 'Lost' : 'Found',
                                           );
                                         }
@@ -547,7 +726,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           value: 'delete',
                                           child: Row(
                                             children: [
-                                              Icon(Icons.delete, color: Colors.red),
+                                              Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                              ),
                                               SizedBox(width: 8),
                                               Text('Delete Post'),
                                             ],
@@ -555,86 +737,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
-                        ),
-                      );
-                    }),
-                    const Divider(color: Colors.yellowAccent, height: 32),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('My Matches', style: TextStyle(color: Colors.yellowAccent, fontSize: 18)),
-                    ),
-                    FutureBuilder<List<QuerySnapshot>>(
-                      future: Future.wait([
-                        FirebaseFirestore.instance
-                            .collection('matches')
-                            .where('lostUserId', isEqualTo: uid)
-                            .get(),
-                        FirebaseFirestore.instance
-                            .collection('matches')
-                            .where('foundUserId', isEqualTo: uid)
-                            .get(),
-                      ]),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                        
-                        final lostMatches = snapshot.data![0].docs;
-                        final foundMatches = snapshot.data![1].docs;
-                        final allMatches = [...lostMatches, ...foundMatches];
-                        
-                        if (allMatches.isEmpty) {
-                          return const Center(child: Text('No matches yet.', style: TextStyle(color: Colors.white70)));
-                        }
-                        
-                        return Column(
-                          children: allMatches.map((matchDoc) {
-                            final match = matchDoc.data() as Map<String, dynamic>;
-                            final isUserLost = match['lostUserId'] == uid;
-                            final otherItemId = isUserLost ? match['foundItemId'] : match['lostItemId'];
-                            final otherCollection = isUserLost ? 'found_items' : 'lost_items';
-                            final matchType = isUserLost ? 'Found Item' : 'Lost Item';
-                            
-                            return FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance.collection(otherCollection).doc(otherItemId).get(),
-                              builder: (context, otherSnapshot) {
-                                if (!otherSnapshot.hasData) return const SizedBox.shrink();
-                                final otherData = otherSnapshot.data!.data() as Map<String, dynamic>?;
-                                if (otherData == null) return const SizedBox.shrink();
-                                return Card(
-                                  color: Colors.green[900],
-                                  child: ListTile(
-                                    leading: otherData['imageUrl'] != null
-                                        ? (otherData['imageUrl'].toString().startsWith('http')
-                                            ? Image.network(otherData['imageUrl'], width: 48, height: 48, fit: BoxFit.cover)
-                                            : null)
-                                        : null,
-                                    title: Text(otherData['subType'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-                                    subtitle: Text('Matched $matchType', style: const TextStyle(color: Colors.white70)),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => PostStoryScreen(
-                                            postId: otherItemId,
-                                            collection: otherCollection,
-                                            postType: isUserLost ? 'Found' : 'Lost',
-                                          ),
-                                        ),
-                                      );
-                                    },
                                   ),
-                                );
-                              },
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),

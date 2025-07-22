@@ -6,6 +6,8 @@ import 'screens/launch_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/post_found_verification_screen.dart';
 import 'screens/country_city_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/notifications_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +45,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const LaunchScreen(),
+        '/main': (context) => const MainNavScreen(),
         '/home': (context) => const HomeScreen(), //navigation to home
         '/post-found-verification': (_) => const PostFoundVerificationScreen(),
         '/country-city': (context) => const CountryCityScreen(),
@@ -54,6 +57,81 @@ class MyApp extends StatelessWidget {
       // ),
       //   ),
       // ),
+    );
+  }
+}
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
+      backgroundColor: Colors.black,
+      body: const Center(
+        child: Text('Settings coming soon!', style: TextStyle(color: Colors.white70, fontSize: 20)),
+      ),
+    );
+  }
+}
+
+class MainNavScreen extends StatefulWidget {
+  const MainNavScreen({super.key});
+
+  @override
+  State<MainNavScreen> createState() => _MainNavScreenState();
+}
+
+class _MainNavScreenState extends State<MainNavScreen> {
+  int _selectedIndex = 0;
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const NotificationsScreen(),
+    const ProfileScreen(),
+    const SettingsScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.yellowAccent,
+        unselectedItemColor: Colors.white70,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
     );
   }
 }
