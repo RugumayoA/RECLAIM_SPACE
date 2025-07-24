@@ -41,13 +41,13 @@ class _PostLostScreenState extends State<PostLostScreen> {
   ];
 
   final List<String> estimatedAges = [
-    'Under 5',
-    '5-12',
-    '13-17',
-    '18-25',
-    '26-35',
-    '36-50',
-    'Over 50',
+    'Below 3',
+    '3-7',
+    '8-13',
+    '14-20',
+    '21-30',
+    '31-45',
+    'Above 46'
   ];
 
   final List<String> genders = ['Male', 'Female', 'Other'];
@@ -129,8 +129,26 @@ class _PostLostScreenState extends State<PostLostScreen> {
       return;
     }
     setState(() => _loading = true);
+    
+    // Show initial loading message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Uploading image...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
     try {
       final imageResult = await uploadImageWithHash(imageFile);
+      
+      // Show progress message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Processing your post...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
       await PostLostService.uploadLostPost(
         type: selectedCategory,
         subType: selectedIDType,
@@ -227,7 +245,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    value: ['ID', 'Person'].contains(selectedCategory) ? selectedCategory : 'ID',
                     items: const [
                       DropdownMenuItem(
                         value: 'ID',
@@ -258,7 +276,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
                       style: TextStyle(color: Colors.white),
                     ),
                     DropdownButtonFormField<String>(
-                      value: selectedIDType,
+                      value: selectedIDType != null && idTypes.contains(selectedIDType) ? selectedIDType : null,
                       hint: const Text(
                         'Which type of ID?',
                         style: TextStyle(color: Colors.white),
@@ -364,7 +382,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
 
                     // Gender Dropdown
                     DropdownButtonFormField<String>(
-                      value: gender,
+                      value: gender != null && genders.contains(gender) ? gender : null,
                       items: genders.map((g) {
                         return DropdownMenuItem(
                           value: g,

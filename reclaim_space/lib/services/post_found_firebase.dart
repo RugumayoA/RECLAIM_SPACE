@@ -177,7 +177,10 @@ Thank you for using ReclaimSpace.''';
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    await _firestore.collection('found_items').add({
+    // Create batch for efficient Firestore operations
+    final batch = _firestore.batch();
+
+    batch.set(_firestore.collection('found_items').doc(), {
       'uid': user.uid,
       'type': type,
       'subType': subType,
@@ -190,7 +193,19 @@ Thank you for using ReclaimSpace.''';
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Optionally, add a notification or other logic here
+    // Add notification
+    batch.set(
+      _firestore.collection('notifications').doc(user.uid).collection('items').doc(),
+      {
+        'title': 'Post created',
+        'message': 'Your found post has been saved. We\'ll notify you if we find a match!',
+        'timestamp': FieldValue.serverTimestamp(),
+        'seen': false,
+      }
+    );
+
+    // Commit all operations at once
+    await batch.commit();
   }
 
   static Future<void> sendSMSNotification(String phoneNumber, String message) async {
@@ -211,6 +226,84 @@ Thank you for using ReclaimSpace.''';
       print('EgoSMS response: ${response.body}');
     } catch (e) {
       print('EgoSMS error: ${e.toString()}');
+    }
+  }
+}
+
+class PostFoundService {
+  static final _firestore = FirebaseFirestore.instance;
+  static final _auth = FirebaseAuth.instance;
+
+  static Future<List<Map<String, dynamic>>> findMatches(String type, Map<String, dynamic> details) async {
+    try {
+      final lostItems = await FirebaseFirestore.instance
+          .collection('lost_items')
+          .where('type', isEqualTo: type)
+          .get();
+
+      final matches = lostItems.docs.where((doc) {
+        final lostDetails = doc.data()['details'] as Map<String, dynamic>;
+        
+        // For Person type
+        if (type == 'Person') {
+          // Must match exactly
+          if (details['age'] != lostDetails['age'] ||
+              details['gender'].toLowerCase() != lostDetails['gender'].toLowerCase()) {
+            return false;
+          }
+
+          // Name match if provided
+          if (details['name']?.isNotEmpty && lostDetails['name']?.isNotEmpty) {
+            if (!details['name'].toLowerCase().contains(lostDetails['name'].toLowerCase()) &&
+                !lostDetails['name'].toLowerCase().contains(details['name'].toLowerCase())) {
+              return false;
+            }
+          }
+
+          // Description keyword matching
+          if (details['description']?.isNotEmpty && lostDetails['description']?.isNotEmpty) {
+            final foundKeywords = details['description'].toLowerCase().split(' ');
+            final lostKeywords = lostDetails['description'].toLowerCase().split(' ');
+            
+            final matchingKeywords = foundKeywords.where((keyword) => 
+              lostKeywords.contains(keyword)).length;
+            if (matchingKeywords / foundKeywords.length < 0.3) {
+              return false;
+            }
+          }
+
+          return true;
+        }
+
+        // For ID type
+        if (type == 'ID') {
+          // Must match exactly
+          if (doc.data()['subType'] != details['subType']) {
+            return false;
+          }
+
+          // Institution match for School/Employee IDs
+          if (['School ID', 'Employee ID'].contains(details['subType'])) {
+            if (details['institution']?.toLowerCase() != 
+                lostDetails['institution']?.toLowerCase()) {
+              return false;
+            }
+          }
+
+          // Name on ID match
+          if (details['name']?.isNotEmpty && lostDetails['name']?.isNotEmpty) {
+            return details['name'].toLowerCase().contains(lostDetails['name'].toLowerCase()) ||
+                   lostDetails['name'].toLowerCase().contains(details['name'].toLowerCase());
+          }
+        }
+
+        return false;
+      }).toList();
+
+      return matches.map((doc) => doc.data()).toList();
+    } catch (e) {
+      print('Error finding matches: $e');
+      return [];
     }
   }
 }

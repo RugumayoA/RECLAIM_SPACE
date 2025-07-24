@@ -23,6 +23,8 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
   final TextEditingController _pass2 = TextEditingController();
   final TextEditingController _phoneController = TextEditingController(); // NEW
   bool _loading = false;
+  bool _obscurePass1 = true;
+  bool _obscurePass2 = true;
 
   void _createAccount() async {
     final p1 = _pass1.text.trim();
@@ -146,21 +148,43 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: _pass1,
-                obscureText: true,
+                obscureText: _obscurePass1,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  labelStyle: TextStyle(color: Colors.white70),
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePass1 ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePass1 = !_obscurePass1;
+                      });
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _pass2,
-                obscureText: true,
+                obscureText: _obscurePass2,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Confirm Password',
-                  labelStyle: TextStyle(color: Colors.white70),
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePass2 ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePass2 = !_obscurePass2;
+                      });
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 30),

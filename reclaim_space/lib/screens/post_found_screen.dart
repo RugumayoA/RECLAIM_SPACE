@@ -170,8 +170,26 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
       return;
     }
     setState(() => _loading = true);
+    
+    // Show initial loading message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Uploading image...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
     try {
       final imageResult = await uploadImageWithHash(imageFile);
+      
+      // Show progress message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Processing your post...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
       await PostLostService.uploadFoundPost(
         type: selectedCategory,
         subType: selectedIDType,
@@ -181,6 +199,8 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
           'description': description ?? '',
           'location': location ?? '',
           'foundDate': foundDate?.toIso8601String() ?? '',
+          'age': ageRange ?? '',
+          'gender': gender ?? '',
         },
         imageUrl: imageResult['url'] ?? '',
         imageHash: imageResult['hash'] ?? '',
@@ -462,7 +482,7 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                     },
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
-                      labelText: 'Where was it found?',
+                      labelText: 'Where was it/she/he found?',
                       labelStyle: TextStyle(color: Colors.white),
                     ),
                     validator: (val) => (val == null || val.isEmpty)

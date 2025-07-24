@@ -43,14 +43,30 @@ class ImageUploadService {
     } else {
       throw Exception('Unsupported image type');
     }
+    
+    // Compress image to reduce upload size
+    final originalImage = img.decodeImage(Uint8List.fromList(bytes));
+    if (originalImage != null) {
+      // Resize to max 800x800 to reduce file size
+      final compressedImage = img.copyResize(
+        originalImage,
+        width: originalImage.width > 800 ? 800 : originalImage.width,
+        height: originalImage.height > 800 ? 800 : originalImage.height,
+      );
+      bytes = Uint8List.fromList(img.encodeJpg(compressedImage, quality: 85));
+    }
+    
     final base64Image = base64Encode(bytes);
     final url = Uri.parse('https://api.imgbb.com/1/upload?key=$_apiKey');
+    
+    // Add timeout to prevent hanging
     final response = await http.post(
       url,
       body: {
         'image': base64Image,
       },
-    );
+    ).timeout(const Duration(seconds: 30));
+    
     final data = jsonDecode(response.body);
     if (data['success'] == true) {
       final hash = md5.convert(bytes).toString();
