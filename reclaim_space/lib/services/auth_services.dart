@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 
@@ -28,17 +29,11 @@ class AuthService {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.redAccent),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.redAccent)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Continue',
-              style: TextStyle(color: Colors.greenAccent),
-            ),
+            child: const Text('Continue', style: TextStyle(color: Colors.greenAccent)),
           ),
         ],
       ),
@@ -47,11 +42,19 @@ class AuthService {
     if (shouldProceed != true) return;
 
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return;
+      GoogleSignInAccount? googleUser;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      if (kIsWeb) {
+        // 🔄 Use signInSilently on web first
+        googleUser = await _googleSignIn.signInSilently();
+        googleUser ??= await _googleSignIn.signIn(); // fallback if needed
+      } else {
+        googleUser = await _googleSignIn.signIn();
+      }
+
+      if (googleUser == null) return; // User canceled
+
+      final googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -59,9 +62,8 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-
-      // Save user to Firestore
       final user = userCredential.user;
+
       if (user != null) {
         final userDoc = _firestore.collection('users').doc(user.uid);
         final doc = await userDoc.get();
@@ -79,6 +81,8 @@ class AuthService {
             'createdAt': FieldValue.serverTimestamp(),
             'lastlogin': FieldValue.serverTimestamp(),
           });
+        } else {
+          await userDoc.update({'lastlogin': FieldValue.serverTimestamp()});
         }
       }
 
@@ -89,7 +93,7 @@ class AuthService {
     } catch (e) {
       debugPrint('Google sign-in error: $e');
       scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('Failed to sign in: ${e.toString()}')),
+        SnackBar(content: Text('Failed to sign in: $e')),
       );
     }
   }
