@@ -7,7 +7,6 @@ import 'post_found_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class PostLostScreen extends StatefulWidget {
   const PostLostScreen({super.key});
 
@@ -27,14 +26,31 @@ class _PostLostScreenState extends State<PostLostScreen> {
   dynamic imageFile; // File (mobile) or Uint8List (web)
   bool _loading = false;
 
+  // Add these new declarations
+  String? estimatedAge;
+  String? gender;
+  String? description;
+
   final List<String> idTypes = [
     'School ID',
     'National ID',
     'Employee ID',
     'Insurance ID',
     'Passport',
-    'Foreigner/Refugee ID'
+    'Foreigner/Refugee ID',
   ];
+
+  final List<String> estimatedAges = [
+    'Under 5',
+    '5-12',
+    '13-17',
+    '18-25',
+    '26-35',
+    '36-50',
+    'Over 50',
+  ];
+
+  final List<String> genders = ['Male', 'Female', 'Other'];
 
   @override
   void initState() {
@@ -48,8 +64,11 @@ class _PostLostScreenState extends State<PostLostScreen> {
     await prefs.setString('lost_selectedIDType', selectedIDType ?? '');
     await prefs.setString('lost_institution', institution ?? '');
     await prefs.setString('lost_name', name ?? '');
-    await prefs.setString('lost_age', age ?? '');
     await prefs.setString('lost_location', location ?? '');
+    // Add these new fields
+    await prefs.setString('lost_estimatedAge', estimatedAge ?? '');
+    await prefs.setString('lost_gender', gender ?? '');
+    await prefs.setString('lost_description', description ?? '');
   }
 
   Future<void> loadDraft() async {
@@ -63,6 +82,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
       name = prefs.getString('lost_name');
       age = prefs.getString('lost_age');
       location = prefs.getString('lost_location');
+      // Add these new fields
+      estimatedAge = prefs.getString('lost_estimatedAge');
+      gender = prefs.getString('lost_gender');
+      description = prefs.getString('lost_description');
     });
   }
 
@@ -74,6 +97,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
     await prefs.remove('lost_name');
     await prefs.remove('lost_age');
     await prefs.remove('lost_location');
+    // Add these new fields
+    await prefs.remove('lost_estimatedAge');
+    await prefs.remove('lost_gender');
+    await prefs.remove('lost_description');
   }
 
   Future<void> pickImage(ImageSource source) async {
@@ -96,9 +123,9 @@ class _PostLostScreenState extends State<PostLostScreen> {
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (imageFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please attach an image')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please attach an image')));
       return;
     }
     setState(() => _loading = true);
@@ -110,8 +137,10 @@ class _PostLostScreenState extends State<PostLostScreen> {
         institution: institution,
         details: {
           'name': name ?? '',
-          'age': age ?? '',
+          'age': estimatedAge ?? '',
+          'gender': gender ?? '',
           'location': location ?? '',
+          'description': description ?? '',
         },
         imageUrl: imageResult['url']!,
         imageHash: imageResult['hash']!,
@@ -161,15 +190,16 @@ class _PostLostScreenState extends State<PostLostScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => const PostSuccessScreen(
-            message: 'Lost item posted successfully! We will notify you if a match is found.',
+            message:
+                'Lost item posted successfully! We will notify you if a match is found.',
           ),
         ),
       );
     } catch (e) {
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     }
   }
 
@@ -191,13 +221,28 @@ class _PostLostScreenState extends State<PostLostScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('What type of item is lost?', style: TextStyle(color: Colors.white)),
+                  const Text(
+                    'What type of item is lost?',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
                     items: const [
-                      DropdownMenuItem(value: 'ID', child: Text('ID', style: TextStyle(color: Colors.white))),
-                      DropdownMenuItem(value: 'Person', child: Text('Person', style: TextStyle(color: Colors.white))),
+                      DropdownMenuItem(
+                        value: 'ID',
+                        child: Text(
+                          'ID',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Person',
+                        child: Text(
+                          'Person',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
                     ],
                     dropdownColor: Colors.black,
                     onChanged: (val) {
@@ -208,23 +253,38 @@ class _PostLostScreenState extends State<PostLostScreen> {
                   ),
                   const SizedBox(height: 20),
                   if (selectedCategory == 'ID') ...[
-                    const Text('Select ID Type', style: TextStyle(color: Colors.white)),
+                    const Text(
+                      'Select ID Type',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     DropdownButtonFormField<String>(
                       value: selectedIDType,
-                      hint: const Text('Which type of ID?', style: TextStyle(color: Colors.white)),
+                      hint: const Text(
+                        'Which type of ID?',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       dropdownColor: Colors.black,
                       items: idTypes.map((id) {
-                        return DropdownMenuItem(value: id, child: Text(id, style: const TextStyle(color: Colors.white)));
+                        return DropdownMenuItem(
+                          value: id,
+                          child: Text(
+                            id,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
                       }).toList(),
                       onChanged: (val) {
                         setState(() => selectedIDType = val);
                         saveDraft();
                       },
                       style: const TextStyle(color: Colors.white),
-                      validator: (val) => val == null || val.isEmpty ? 'Please select ID type' : null,
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Please select ID type'
+                          : null,
                     ),
                     const SizedBox(height: 10),
-                    if (selectedIDType == 'School ID' || selectedIDType == 'Employee ID') ...[
+                    if (selectedIDType == 'School ID' ||
+                        selectedIDType == 'Employee ID') ...[
                       TextFormField(
                         onChanged: (val) {
                           institution = val;
@@ -237,7 +297,9 @@ class _PostLostScreenState extends State<PostLostScreen> {
                               : 'Employment Organisation',
                           labelStyle: const TextStyle(color: Colors.white),
                         ),
-                        validator: (val) => (val == null || val.isEmpty) ? 'This field is required' : null,
+                        validator: (val) => (val == null || val.isEmpty)
+                            ? 'This field is required'
+                            : null,
                       ),
                     ],
                     TextFormField(
@@ -250,9 +312,12 @@ class _PostLostScreenState extends State<PostLostScreen> {
                         labelText: 'Name on ID',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name on the ID' : null,
+                      validator: (val) => (val == null || val.isEmpty)
+                          ? 'Please enter the name on the ID'
+                          : null,
                     ),
                   ] else ...[
+                    // Name
                     TextFormField(
                       onChanged: (val) {
                         name = val;
@@ -263,22 +328,69 @@ class _PostLostScreenState extends State<PostLostScreen> {
                         labelText: 'Name',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the name' : null,
+                      validator: (val) => (val == null || val.isEmpty)
+                          ? 'Please enter the name'
+                          : null,
                     ),
                     const SizedBox(height: 10),
-                    TextFormField(
+
+                    // Estimated Age Dropdown
+                    DropdownButtonFormField<String>(
+                      value: estimatedAge,
+                      items: estimatedAges.map((ageGroup) {
+                        return DropdownMenuItem(
+                          value: ageGroup,
+                          child: Text(
+                            ageGroup,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }).toList(),
                       onChanged: (val) {
-                        age = val;
+                        setState(() => estimatedAge = val);
                         saveDraft();
                       },
-                      style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
-                        labelText: 'Age',
+                        labelText: 'Estimated Age',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the age' : null,
+                      dropdownColor: Colors.black,
+                      style: const TextStyle(color: Colors.white),
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Please select estimated age'
+                          : null,
                     ),
                     const SizedBox(height: 10),
+
+                    // Gender Dropdown
+                    DropdownButtonFormField<String>(
+                      value: gender,
+                      items: genders.map((g) {
+                        return DropdownMenuItem(
+                          value: g,
+                          child: Text(
+                            g,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() => gender = val);
+                        saveDraft();
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Gender',
+                        labelStyle: TextStyle(color: Colors.white),
+                      ),
+                      dropdownColor: Colors.black,
+                      style: const TextStyle(color: Colors.white),
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Please select gender'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Location
                     TextFormField(
                       onChanged: (val) {
                         location = val;
@@ -289,8 +401,29 @@ class _PostLostScreenState extends State<PostLostScreen> {
                         labelText: 'Where (Optional)',
                         labelStyle: TextStyle(color: Colors.white),
                       ),
-                      validator: (val) => (val == null || val.isEmpty) ? 'Please enter the location' : null,
+                      validator: (val) => (val == null || val.isEmpty)
+                          ? 'Please enter the location'
+                          : null,
                     ),
+                    const SizedBox(height: 10),
+
+                    // Description
+                    TextFormField(
+                      onChanged: (val) {
+                        description = val;
+                        saveDraft();
+                      },
+                      style: const TextStyle(color: Colors.white),
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Description / Distinguishing Features',
+                        labelStyle: TextStyle(color: Colors.white),
+                      ),
+                      validator: (val) => (val == null || val.isEmpty)
+                          ? 'Please enter a description'
+                          : null,
+                    ),
+                    const SizedBox(height: 10),
                   ],
                   const SizedBox(height: 20),
                   Row(
@@ -299,7 +432,9 @@ class _PostLostScreenState extends State<PostLostScreen> {
                         onPressed: () => pickImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library),
                         label: const Text('Pick from Gallery'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.yellowAccent),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.yellowAccent,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       if (imageFile != null)
