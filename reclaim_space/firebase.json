@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"reclaim-space-df557","appId":"1:944984505105:android:fffea3cb4606a71ddaaab0","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"reclaim-space-df557","configurations":{"android":"1:944984505105:android:fffea3cb4606a71ddaaab0","ios":"1:944984505105:ios:8a0f8c0ba741395cdaaab0","macos":"1:944984505105:ios:8a0f8c0ba741395cdaaab0","web":"1:944984505105:web:ef9941d1639149eddaaab0","windows":"1:944984505105:web:7a0811b05a3464d8daaab0"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "reclaim-space-df557",
+          "appId": "1:944984505105:android:fffea3cb4606a71ddaaab0",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "reclaim-space-df557",
+          "configurations": {
+            "android": "1:944984505105:android:fffea3cb4606a71ddaaab0",
+            "ios": "1:944984505105:ios:8a0f8c0ba741395cdaaab0",
+            "macos": "1:944984505105:ios:8a0f8c0ba741395cdaaab0",
+            "web": "1:944984505105:web:ef9941d1639149eddaaab0",
+            "windows": "1:944984505105:web:7a0811b05a3464d8daaab0"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
