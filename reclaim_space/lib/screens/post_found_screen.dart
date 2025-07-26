@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../services/image_upload_service.dart';
 import 'notifications_screen.dart'; // Added import for NotificationsScreen
 import '../services/post_found_firebase.dart';
+import '../services/post_lost_firebase.dart'; // Added import for PostLostService
 
 class PostSuccessScreen extends StatelessWidget {
   final String message;
@@ -59,18 +60,56 @@ class PostFoundScreen extends StatefulWidget {
 class _PostFoundScreenState extends State<PostFoundScreen> {
   final _formKey = GlobalKey<FormState>();
   String selectedCategory = 'ID';
+  
+  // ID fields
   String? selectedIDType;
   String? institution;
   String? name;
+  
+  // Person fields
+  String? estimatedAge;
+  String? gender;
   String? description;
   String? location;
-  DateTime? foundDate;
+  
+  // Electronics fields
+  String? deviceType;
+  String? brandModel;
+  String? color;
+  String? serialNumber;
+  
+  // Jewelry fields
+  String? jewelryType;
+  String? material;
+  String? jewelryBrand;
+  String? distinctiveFeatures;
+  
+  // Clothing fields
+  String? itemType;
+  String? clothingBrand;
+  String? clothingColor;
+  String? size;
+  
+  // Documents fields
+  String? documentType;
+  String? issuingAuthority;
+  String? documentNumber;
+  String? expiryDate;
 
-  dynamic imageFile; // File (mobile) or Uint8List (web)
+  DateTime? foundDate;
+  dynamic imageFile;
   bool _loading = false;
 
-  String? ageRange;
-  String? gender;
+  // Category lists
+  final List<String> categories = [
+    'ID',
+    'Person', 
+    'Electronics',
+    'Jewelry & Watches',
+    'Clothing & Bags',
+    'Documents',
+    'Other'
+  ];
 
   final List<String> idTypes = [
     'School ID',
@@ -79,6 +118,67 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     'Insurance ID',
     'Passport',
     'Foreigner/Refugee ID',
+  ];
+
+  final List<String> estimatedAges = [
+    'Below 3',
+    '3-7',
+    '8-13',
+    '14-20',
+    '21-30',
+    '31-45',
+    'Above 46'
+  ];
+
+  final List<String> genders = ['Male', 'Female', 'Other'];
+
+  // Electronics
+  final List<String> deviceTypes = [
+    'Phone',
+    'Laptop',
+    'Tablet',
+    'Headphones',
+    'Camera',
+    'Watch',
+    'Other'
+  ];
+
+  // Jewelry
+  final List<String> jewelryTypes = [
+    'Ring',
+    'Necklace',
+    'Watch',
+    'Bracelet',
+    'Earrings',
+    'Other'
+  ];
+
+  final List<String> materials = [
+    'Gold',
+    'Silver',
+    'Platinum',
+    'Diamond',
+    'Other'
+  ];
+
+  // Clothing
+  final List<String> itemTypes = [
+    'Jacket',
+    'Bag',
+    'Shoes',
+    'Shirt',
+    'Pants',
+    'Hat',
+    'Other'
+  ];
+
+  // Documents
+  final List<String> documentTypes = [
+    'Certificate',
+    'Contract',
+    'License',
+    'Passport',
+    'Other'
   ];
 
   @override
@@ -90,17 +190,44 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
   Future<void> saveDraft() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('found_selectedCategory', selectedCategory);
+    
+    // Save all category-specific fields
     await prefs.setString('found_selectedIDType', selectedIDType ?? '');
     await prefs.setString('found_institution', institution ?? '');
     await prefs.setString('found_name', name ?? '');
-    await prefs.setString('found_description', description ?? '');
     await prefs.setString('found_location', location ?? '');
+    await prefs.setString('found_estimatedAge', estimatedAge ?? '');
+    await prefs.setString('found_gender', gender ?? '');
+    await prefs.setString('found_description', description ?? '');
+    
+    // Electronics
+    await prefs.setString('found_deviceType', deviceType ?? '');
+    await prefs.setString('found_brandModel', brandModel ?? '');
+    await prefs.setString('found_color', color ?? '');
+    await prefs.setString('found_serialNumber', serialNumber ?? '');
+    
+    // Jewelry
+    await prefs.setString('found_jewelryType', jewelryType ?? '');
+    await prefs.setString('found_material', material ?? '');
+    await prefs.setString('found_jewelryBrand', jewelryBrand ?? '');
+    await prefs.setString('found_distinctiveFeatures', distinctiveFeatures ?? '');
+    
+    // Clothing
+    await prefs.setString('found_itemType', itemType ?? '');
+    await prefs.setString('found_clothingBrand', clothingBrand ?? '');
+    await prefs.setString('found_clothingColor', clothingColor ?? '');
+    await prefs.setString('found_size', size ?? '');
+    
+    // Documents
+    await prefs.setString('found_documentType', documentType ?? '');
+    await prefs.setString('found_issuingAuthority', issuingAuthority ?? '');
+    await prefs.setString('found_documentNumber', documentNumber ?? '');
+    await prefs.setString('found_expiryDate', expiryDate ?? '');
+    
     await prefs.setString(
       'found_foundDate',
       foundDate?.toIso8601String() ?? '',
     );
-    await prefs.setString('found_ageRange', ageRange ?? '');
-    await prefs.setString('found_gender', gender ?? '');
   }
 
   Future<void> loadDraft() async {
@@ -108,20 +235,45 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     setState(() {
       selectedCategory = prefs.getString('found_selectedCategory') ?? 'ID';
       if (selectedCategory == '') selectedCategory = 'ID';
+      
+      // Load all category-specific fields
       selectedIDType = prefs.getString('found_selectedIDType');
       if (selectedIDType == '') selectedIDType = null;
       institution = prefs.getString('found_institution');
       name = prefs.getString('found_name');
-      description = prefs.getString('found_description');
       location = prefs.getString('found_location');
+      estimatedAge = prefs.getString('found_estimatedAge');
+      gender = prefs.getString('found_gender');
+      description = prefs.getString('found_description');
+      
+      // Electronics
+      deviceType = prefs.getString('found_deviceType');
+      brandModel = prefs.getString('found_brandModel');
+      color = prefs.getString('found_color');
+      serialNumber = prefs.getString('found_serialNumber');
+      
+      // Jewelry
+      jewelryType = prefs.getString('found_jewelryType');
+      material = prefs.getString('found_material');
+      jewelryBrand = prefs.getString('found_jewelryBrand');
+      distinctiveFeatures = prefs.getString('found_distinctiveFeatures');
+      
+      // Clothing
+      itemType = prefs.getString('found_itemType');
+      clothingBrand = prefs.getString('found_clothingBrand');
+      clothingColor = prefs.getString('found_clothingColor');
+      size = prefs.getString('found_size');
+      
+      // Documents
+      documentType = prefs.getString('found_documentType');
+      issuingAuthority = prefs.getString('found_issuingAuthority');
+      documentNumber = prefs.getString('found_documentNumber');
+      expiryDate = prefs.getString('found_expiryDate');
+      
       final dateStr = prefs.getString('found_foundDate');
       foundDate = (dateStr != null && dateStr.isNotEmpty)
           ? DateTime.tryParse(dateStr)
           : null;
-      ageRange = prefs.getString('found_ageRange');
-      if (ageRange == '') ageRange = null;
-      gender = prefs.getString('found_gender');
-      if (gender == '') gender = null;
     });
   }
 
@@ -134,8 +286,32 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
     await prefs.remove('found_description');
     await prefs.remove('found_location');
     await prefs.remove('found_foundDate');
-    await prefs.remove('found_ageRange');
+    await prefs.remove('found_estimatedAge');
     await prefs.remove('found_gender');
+    
+    // Electronics
+    await prefs.remove('found_deviceType');
+    await prefs.remove('found_brandModel');
+    await prefs.remove('found_color');
+    await prefs.remove('found_serialNumber');
+    
+    // Jewelry
+    await prefs.remove('found_jewelryType');
+    await prefs.remove('found_material');
+    await prefs.remove('found_jewelryBrand');
+    await prefs.remove('found_distinctiveFeatures');
+    
+    // Clothing
+    await prefs.remove('found_itemType');
+    await prefs.remove('found_clothingBrand');
+    await prefs.remove('found_clothingColor');
+    await prefs.remove('found_size');
+    
+    // Documents
+    await prefs.remove('found_documentType');
+    await prefs.remove('found_issuingAuthority');
+    await prefs.remove('found_documentNumber');
+    await prefs.remove('found_expiryDate');
   }
 
   Future<void> pickImage() async {
@@ -190,18 +366,82 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
         ),
       );
       
-      await PostLostService.uploadFoundPost(
+      // Build details map based on category
+      Map<String, dynamic> details = {};
+      
+      switch (selectedCategory) {
+        case 'ID':
+          details = {
+            'name': name ?? '',
+            'subType': selectedIDType ?? '',
+            'institution': institution ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+        case 'Person':
+          details = {
+            'name': name ?? '',
+            'age': estimatedAge ?? '',
+            'gender': gender ?? '',
+            'location': location ?? '',
+            'description': description ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+        case 'Electronics':
+          details = {
+            'deviceType': deviceType ?? '',
+            'brandModel': brandModel ?? '',
+            'color': color ?? '',
+            'serialNumber': serialNumber ?? '',
+            'location': location ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+        case 'Jewelry & Watches':
+          details = {
+            'jewelryType': jewelryType ?? '',
+            'material': material ?? '',
+            'brand': jewelryBrand ?? '',
+            'distinctiveFeatures': distinctiveFeatures ?? '',
+            'location': location ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+        case 'Clothing & Bags':
+          details = {
+            'itemType': itemType ?? '',
+            'brand': clothingBrand ?? '',
+            'color': clothingColor ?? '',
+            'size': size ?? '',
+            'location': location ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+        case 'Documents':
+          details = {
+            'documentType': documentType ?? '',
+            'issuingAuthority': issuingAuthority ?? '',
+            'documentNumber': documentNumber ?? '',
+            'expiryDate': expiryDate ?? '',
+            'location': location ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+        case 'Other':
+          details = {
+            'description': description ?? '',
+            'location': location ?? '',
+            'foundDate': foundDate?.toIso8601String() ?? '',
+          };
+          break;
+      }
+      
+      await PostFoundService.uploadFoundPost(
         type: selectedCategory,
         subType: selectedIDType,
         institution: institution,
-        details: {
-          'name': name ?? '',
-          'description': description ?? '',
-          'location': location ?? '',
-          'foundDate': foundDate?.toIso8601String() ?? '',
-          'age': ageRange ?? '',
-          'gender': gender ?? '',
-        },
+        details: details,
         imageUrl: imageResult['url'] ?? '',
         imageHash: imageResult['hash'] ?? '',
       );
@@ -266,30 +506,16 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'ID',
+                    value: categories.contains(selectedCategory) ? selectedCategory : 'ID',
+                    items: categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
                         child: Text(
-                          'ID',
-                          style: TextStyle(color: Colors.white),
+                          category,
+                          style: const TextStyle(color: Colors.white),
                         ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Person',
-                        child: Text(
-                          'Person',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Other',
-                        child: Text(
-                          'Other',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
+                      );
+                    }).toList(),
                     dropdownColor: Colors.black,
                     onChanged: (val) {
                       setState(() => selectedCategory = val!);
@@ -298,182 +524,10 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                     style: const TextStyle(color: Colors.white),
                   ),
                   const SizedBox(height: 20),
-                  if (selectedCategory == 'ID') ...[
-                    const Text(
-                      'Select ID Type',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    DropdownButtonFormField<String>(
-                      value: selectedIDType,
-                      hint: const Text(
-                        'Which type of ID?',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      dropdownColor: Colors.black,
-                      items: idTypes.map((id) {
-                        return DropdownMenuItem(
-                          value: id,
-                          child: Text(
-                            id,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() => selectedIDType = val);
-                        saveDraft();
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Please select ID type'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                    if (selectedIDType == 'School ID' ||
-                        selectedIDType == 'Employee ID') ...[
-                      TextFormField(
-                        onChanged: (val) {
-                          institution = val;
-                          saveDraft();
-                        },
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: selectedIDType == 'School ID'
-                              ? 'Name of School/University'
-                              : 'Employment Organisation',
-                          labelStyle: const TextStyle(color: Colors.white),
-                        ),
-                        validator: (val) => (val == null || val.isEmpty)
-                            ? 'This field is required'
-                            : null,
-                      ),
-                    ],
-                    TextFormField(
-                      onChanged: (val) {
-                        name = val;
-                        saveDraft();
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Name on ID',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? 'Please enter the name on the ID'
-                          : null,
-                    ),
-                  ] else if (selectedCategory == 'Person') ...[
-                    TextFormField(
-                      onChanged: (val) {
-                        name = val;
-                        saveDraft();
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Name (if known)',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? 'Please enter the name (if known)'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-
-                    TextFormField(
-                      onChanged: (val) {
-                        description = val;
-                        saveDraft();
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Description/Distinguishing Features',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? 'Please enter a description'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-
-                    DropdownButtonFormField<String>(
-                      value: ageRange,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Below 3',
-                          child: Text('Below 3'),
-                        ),
-                        DropdownMenuItem(value: '3-7', child: Text('3-7')),
-                        DropdownMenuItem(value: '8-13', child: Text('8-13')),
-                        DropdownMenuItem(value: '14-20', child: Text('14-20')),
-                        DropdownMenuItem(value: '21-30', child: Text('21-30')),
-                        DropdownMenuItem(value: '31-45', child: Text('31-45')),
-                        DropdownMenuItem(
-                          value: 'Above 46',
-                          child: Text('Above 46'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        setState(() => ageRange = val);
-                        saveDraft();
-                      },
-                      dropdownColor: Colors.black,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Estimated Age',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? 'Please select estimated age'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Gender (Dropdown)
-                    DropdownButtonFormField<String>(
-                      value: gender,
-                      items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(
-                          value: 'Female',
-                          child: Text('Female'),
-                        ),
-                        DropdownMenuItem(value: 'Other', child: Text('Other')),
-                        DropdownMenuItem(
-                          value: 'Prefer not to say',
-                          child: Text('Prefer not to say'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        setState(() => gender = val);
-                        saveDraft();
-                      },
-                      dropdownColor: Colors.black,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Gender',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? 'Please select gender'
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                  ] else ...[
-                    TextFormField(
-                      onChanged: (val) {
-                        description = val;
-                        saveDraft();
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Item Description',
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? 'Please enter a description'
-                          : null,
-                    ),
-                  ],
+                  
+                  // Category-specific form fields
+                  _buildCategoryFields(),
+                  
                   const SizedBox(height: 10),
                   TextFormField(
                     onChanged: (val) {
@@ -482,7 +536,7 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
                     },
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
-                      labelText: 'Where was it/she/he found?',
+                      labelText: 'Where was it found?',
                       labelStyle: TextStyle(color: Colors.white),
                     ),
                     validator: (val) => (val == null || val.isEmpty)
@@ -563,6 +617,511 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
               child: CircularProgressIndicator(color: Colors.yellowAccent),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryFields() {
+    switch (selectedCategory) {
+      case 'ID':
+        return _buildIDFields();
+      case 'Person':
+        return _buildPersonFields();
+      case 'Electronics':
+        return _buildElectronicsFields();
+      case 'Jewelry & Watches':
+        return _buildJewelryFields();
+      case 'Clothing & Bags':
+        return _buildClothingFields();
+      case 'Documents':
+        return _buildDocumentsFields();
+      case 'Other':
+        return _buildOtherFields();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildIDFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Select ID Type',
+          style: TextStyle(color: Colors.white),
+        ),
+        DropdownButtonFormField<String>(
+          value: selectedIDType != null && idTypes.contains(selectedIDType) ? selectedIDType : null,
+          hint: const Text(
+            'Which type of ID?',
+            style: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          items: idTypes.map((id) {
+            return DropdownMenuItem(
+              value: id,
+              child: Text(
+                id,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => selectedIDType = val);
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select ID type'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        if (selectedIDType == 'School ID' || selectedIDType == 'Employee ID') ...[
+          TextFormField(
+            onChanged: (val) {
+              institution = val;
+              saveDraft();
+            },
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: selectedIDType == 'School ID'
+                  ? 'Name of School/University'
+                  : 'Employment Organisation',
+              labelStyle: const TextStyle(color: Colors.white),
+            ),
+            validator: (val) => (val == null || val.isEmpty)
+                ? 'This field is required'
+                : null,
+          ),
+        ],
+        TextFormField(
+          onChanged: (val) {
+            name = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Name on ID',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          validator: (val) => (val == null || val.isEmpty)
+              ? 'Please enter the name on the ID'
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPersonFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          onChanged: (val) {
+            name = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Name (if known)',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: estimatedAge != null && estimatedAges.contains(estimatedAge) ? estimatedAge : null,
+          items: estimatedAges.map((ageGroup) {
+            return DropdownMenuItem(
+              value: ageGroup,
+              child: Text(
+                ageGroup,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => estimatedAge = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Estimated Age',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select estimated age'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: gender != null && genders.contains(gender) ? gender : null,
+          items: genders.map((g) {
+            return DropdownMenuItem(
+              value: g,
+              child: Text(
+                g,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => gender = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Gender',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select gender'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            description = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Description / Distinguishing Features',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          validator: (val) => (val == null || val.isEmpty)
+              ? 'Please enter a description'
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildElectronicsFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: deviceType != null && deviceTypes.contains(deviceType) ? deviceType : null,
+          items: deviceTypes.map((type) {
+            return DropdownMenuItem(
+              value: type,
+              child: Text(
+                type,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => deviceType = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Device Type',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select device type'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            brandModel = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Brand/Model',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          validator: (val) => (val == null || val.isEmpty)
+              ? 'Please enter brand/model'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            color = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Color',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            serialNumber = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Serial Number (Optional)',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJewelryFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: jewelryType != null && jewelryTypes.contains(jewelryType) ? jewelryType : null,
+          items: jewelryTypes.map((type) {
+            return DropdownMenuItem(
+              value: type,
+              child: Text(
+                type,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => jewelryType = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Type',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select jewelry type'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: material != null && materials.contains(material) ? material : null,
+          items: materials.map((mat) {
+            return DropdownMenuItem(
+              value: mat,
+              child: Text(
+                mat,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => material = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Material',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            jewelryBrand = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Brand',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            distinctiveFeatures = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Distinctive Features',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildClothingFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: itemType != null && itemTypes.contains(itemType) ? itemType : null,
+          items: itemTypes.map((type) {
+            return DropdownMenuItem(
+              value: type,
+              child: Text(
+                type,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => itemType = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Item Type',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select item type'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            clothingBrand = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Brand',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            clothingColor = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Color',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            size = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Size',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            distinctiveFeatures = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Distinctive Features',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDocumentsFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: documentType != null && documentTypes.contains(documentType) ? documentType : null,
+          items: documentTypes.map((type) {
+            return DropdownMenuItem(
+              value: type,
+              child: Text(
+                type,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() => documentType = val);
+            saveDraft();
+          },
+          decoration: const InputDecoration(
+            labelText: 'Document Type',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          dropdownColor: Colors.black,
+          style: const TextStyle(color: Colors.white),
+          validator: (val) => val == null || val.isEmpty
+              ? 'Please select document type'
+              : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            issuingAuthority = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Issuing Authority',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            documentNumber = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Document Number',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          onChanged: (val) {
+            expiryDate = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: 'Expiry Date',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtherFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          onChanged: (val) {
+            description = val;
+            saveDraft();
+          },
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Description',
+            labelStyle: TextStyle(color: Colors.white),
+          ),
+          validator: (val) => (val == null || val.isEmpty)
+              ? 'Please enter a description'
+              : null,
+        ),
       ],
     );
   }
