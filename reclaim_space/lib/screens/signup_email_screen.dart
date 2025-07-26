@@ -166,7 +166,7 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
                         ),
                       ),
                     ],
-                  ),
+                  )
                 ),
               ),
               const SizedBox(height: 16),
