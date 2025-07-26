@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'notification_details_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -176,6 +177,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         actions: [
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('notifications')
+                .doc(uid)
+                .collection('items')
+                .where('seen', isEqualTo: false)
+                .snapshots(),
+            builder: (context, snapshot) {
+              int unreadCount = snapshot.data?.docs.length ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    onPressed: () {}, // Already on notifications screen
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          minHeight: 20,
+                        ),
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           if (!_isSelectionMode) ...[
             TextButton(
               onPressed: _markAllAsRead,
@@ -247,95 +292,106 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
           }
 
-          // Remove any duplicate or unused allSelected variable here
-          // (No need to declare allSelected again in the body if not used)
-
-          return ListView(
-            children: docs.map((doc) {
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
               final data = doc.data() as Map<String, dynamic>;
-              final isRead = data['seen'] == true;
+              final isUnread = !(data['seen'] ?? false);
               final isSelected = _selectedNotifications.contains(doc.id);
-              return ListTile(
-                leading: _isSelectionMode
-                    ? Checkbox(
-                        value: isSelected,
-                        onChanged: (value) => _toggleNotificationSelection(doc.id),
-                        activeColor: Colors.yellowAccent,
-                      )
-                    : Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: isRead ? Colors.transparent : Colors.yellowAccent,
-                          shape: BoxShape.circle,
+              
+              return Card(
+                color: isUnread ? Colors.yellow[100] : Colors.grey[900],
+                child: ListTile(
+                  leading: _isSelectionMode
+                      ? Checkbox(
+                          value: isSelected,
+                          onChanged: (value) => _toggleNotificationSelection(doc.id),
+                          activeColor: Colors.yellowAccent,
+                        )
+                      : Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isUnread ? Colors.yellowAccent : Colors.transparent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                  title: Text(
+                    data['title'] ?? '',
+                    style: TextStyle(
+                      color: isUnread ? Colors.black : Colors.white,
+                      fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['message'] ?? '',
+                        style: TextStyle(
+                          color: isUnread ? Colors.black87 : Colors.white70,
                         ),
                       ),
-                title: Text(
-                  data['title'],
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatTimestamp(data['timestamp']),
+                        style: TextStyle(
+                          color: isUnread ? Colors.black54 : Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data['message'],
-                      style: TextStyle(
-                        color: isRead ? Colors.white70 : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatTimestamp(data['timestamp']),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                onTap: () {
-                  if (_isSelectionMode) {
-                    _toggleNotificationSelection(doc.id);
-                  } else if (!isRead) {
-                    _markAsRead(doc.id);
-                  }
-                },
-                onLongPress: () {
-                  if (!_isSelectionMode) {
-                    _toggleSelectionMode();
-                    _toggleNotificationSelection(doc.id);
-                  }
-                },
-                tileColor: isSelected
-                    ? Colors.yellowAccent.withAlpha((255 * 0.2).toInt())
-                    : (isRead ? null : Colors.grey[900]),
-                trailing: _isSelectionMode
-                    ? null
-                    : PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.white70),
-                        onSelected: (value) {
-                          if (value == 'delete') {
-                            _deleteSingleNotification(doc.id);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Delete'),
-                              ],
+                  trailing: _isSelectionMode
+                      ? null
+                      : PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, color: Colors.white70),
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              _deleteSingleNotification(doc.id);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('Delete'),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                  onTap: () async {
+                    if (_isSelectionMode) {
+                      _toggleNotificationSelection(doc.id);
+                    } else {
+                      // Mark as read
+                      await _markAsRead(doc.id);
+                      // Navigate to details screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => NotificationDetailsScreen(notification: data),
+                        ),
+                      );
+                    }
+                  },
+                  onLongPress: () {
+                    if (!_isSelectionMode) {
+                      _toggleSelectionMode();
+                      _toggleNotificationSelection(doc.id);
+                    }
+                  },
+                  tileColor: isSelected
+                      ? Colors.yellowAccent.withAlpha((255 * 0.2).toInt())
+                      : null,
+                ),
               );
-            }).toList(),
+            },
           );
         },
       ),

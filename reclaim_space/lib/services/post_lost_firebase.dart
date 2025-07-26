@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+//import 'dart:convert';
 import 'egosms_config.dart' show egosmsUsername, egosmsPassword, egosmsSenderId;
 import 'image_upload_service.dart'; // Add this import
 
@@ -490,6 +490,31 @@ class PostLostService {
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
       });
+      
+      // Create in-app notifications for both users
+      batch.set(
+        _firestore.collection('notifications').doc(lostUserId).collection('items').doc(),
+        {
+          'title': 'Match Found! 🎉',
+          'message': 'A matching $type has been found! Contact the finder to proceed.',
+          'timestamp': FieldValue.serverTimestamp(),
+          'seen': false,
+          'type': 'match',
+          'matchScore': bestMatchScore,
+        }
+      );
+      
+      batch.set(
+        _firestore.collection('notifications').doc(foundUserId).collection('items').doc(),
+        {
+          'title': 'Match Found! 🎉',
+          'message': 'Someone reported losing a $type that matches what you found!',
+          'timestamp': FieldValue.serverTimestamp(),
+          'seen': false,
+          'type': 'match',
+          'matchScore': bestMatchScore,
+        }
+      );
       
       // Send SMS notifications (only if SMS is available)
       if (foundPhone.isNotEmpty && lostPhone.isNotEmpty) {

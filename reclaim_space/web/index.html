@@ -32,6 +32,14 @@
 
   <title>reclaim_space</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Disable reCAPTCHA for testing -->
+  <script>
+    window.recaptchaVerifier = {
+      render: function() { return 'test'; },
+      verify: function() { return Promise.resolve('test'); }
+    };
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
