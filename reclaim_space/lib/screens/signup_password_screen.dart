@@ -5,7 +5,7 @@ import 'home_screen.dart';
 class SignupPasswordScreen extends StatefulWidget {
   final String email;
   final String name;
-  final bool isPhone; // NEW
+  final bool isPhone; 
 
   const SignupPasswordScreen({
     super.key,
@@ -21,7 +21,7 @@ class SignupPasswordScreen extends StatefulWidget {
 class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
   final TextEditingController _pass1 = TextEditingController();
   final TextEditingController _pass2 = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController(); // NEW
+  final TextEditingController _phoneController = TextEditingController(); 
   bool _loading = false;
   bool _obscurePass1 = true;
   bool _obscurePass2 = true;
@@ -34,7 +34,6 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
     if (phone.startsWith('07')) {
       phone = '256' + phone.substring(1);
     }
-    // Phone validation (Uganda format, can be improved)
     if (phone.isEmpty || !RegExp(r'^2567\d{8}').hasMatch(phone)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid Ugandan phone number (e.g. 2567XXXXXXXX)')),
