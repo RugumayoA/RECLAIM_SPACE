@@ -487,9 +487,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 24),
               ToggleButtons(
-                isSelected: [_tabIndex == 0, _tabIndex == 1, _tabIndex == 2],
+                isSelected: [_tabIndex == 0, _tabIndex == 1],
                 onPressed: (i) => setState(() => _tabIndex = i),
-                children: const [Text('Lost'), Text('Found'), Text('Matches')],
+                children: const [Text('Lost'), Text('Found')],
                 color: Colors.white,
                 selectedColor: Colors.yellow,
                 fillColor: Colors.black54,
@@ -499,246 +499,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _tabIndex == 2
-                ? FutureBuilder<List<QuerySnapshot>>(
-                    future: Future.wait([
-                      FirebaseFirestore.instance
-                          .collection('matches')
-                          .where('lostUserId', isEqualTo: uid)
-                          .get(),
-                      FirebaseFirestore.instance
-                          .collection('matches')
-                          .where('foundUserId', isEqualTo: uid)
-                          .get(),
-                    ]),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData)
-                        return const Center(child: CircularProgressIndicator());
-                      final lostMatches = snapshot.data![0].docs;
-                      final foundMatches = snapshot.data![1].docs;
-                      final allMatches = [...lostMatches, ...foundMatches];
-                      if (allMatches.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No matches yet.',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        );
-                      }
-                      return ListView(
-                        children: allMatches.map((matchDoc) {
-                          final match = matchDoc.data() as Map<String, dynamic>;
-                          final isUserLost = match['lostUserId'] == uid;
-                          final otherItemId = isUserLost
-                              ? match['foundItemId']
-                              : match['lostItemId'];
-                          final otherCollection = isUserLost
-                              ? 'found_items'
-                              : 'lost_items';
-                          final matchType = isUserLost
-                              ? 'Found Item'
-                              : 'Lost Item';
-                          return FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection(otherCollection)
-                                .doc(otherItemId)
-                                .get(),
-                            builder: (context, otherSnapshot) {
-                              if (!otherSnapshot.hasData)
-                                return const SizedBox.shrink();
-                              final otherData =
-                                  otherSnapshot.data!.data()
-                                      as Map<String, dynamic>?;
-                              if (otherData == null)
-                                return const SizedBox.shrink();
-                              return Card(
-                                color: Colors.green[900],
-                                child: ListTile(
-                                  leading: otherData['imageUrl'] != null
-                                      ? (otherData['imageUrl']
-                                                .toString()
-                                                .startsWith('http')
-                                            ? Image.network(
-                                                otherData['imageUrl'],
-                                                width: 48,
-                                                height: 48,
-                                                fit: BoxFit.cover,
-                                              )
-                                            : null)
-                                      : null,
-                                  title: Text(
-                                    otherData['subType'] ?? 'Unknown',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  subtitle: Text(
-                                    'Matched $matchType',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => PostStoryScreen(
-                                          postId: otherItemId,
-                                          collection: otherCollection,
-                                          postType: isUserLost
-                                              ? 'Found'
-                                              : 'Lost',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          );
-                        }).toList(),
-                      );
-                    },
-                  )
-                : StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection(
-                          _tabIndex == 0 ? 'lost_items' : 'found_items',
-                        )
-                        .where('uid', isEqualTo: uid)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData)
-                        return const Center(child: CircularProgressIndicator());
-                      final docs = snapshot.data!.docs;
-                      if (docs.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No posts yet.',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        );
-                      }
-                      return GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 1, // reduced from 4
-                              mainAxisSpacing: 1, // reduced from 4
-                              childAspectRatio: 0.8, // slightly taller for IG style
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection(_tabIndex == 0 ? 'lost_items' : 'found_items')
+                  .where('uid', isEqualTo: uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No posts yet.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  );
+                }
+                return GridView.builder(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 1, // reduced from 4
+                        mainAxisSpacing: 1, // reduced from 4
+                        childAspectRatio: 0.8, // slightly taller for IG style
+                      ),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final isSelected = _selectedPosts.contains(doc.id);
+                    final isMatched = data['matched'] == true;
+                    return GestureDetector(
+                      onTap: () {
+                        if (_isSelectionMode) {
+                          _togglePostSelection(doc.id);
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PostStoryScreen(
+                                postId: doc.id,
+                                collection: _tabIndex == 0
+                                    ? 'lost_items'
+                                    : 'found_items',
+                                postType: _tabIndex == 0
+                                    ? 'Lost'
+                                    : 'Found',
+                              ),
                             ),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final doc = docs[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final isSelected = _selectedPosts.contains(doc.id);
-                          final isMatched = data['matched'] == true;
-                          return GestureDetector(
-                            onTap: () {
-                              if (_isSelectionMode) {
-                                _togglePostSelection(doc.id);
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => PostStoryScreen(
-                                      postId: doc.id,
-                                      collection: _tabIndex == 0
+                          );
+                        }
+                      },
+                      onLongPress: () {
+                        if (!_isSelectionMode) {
+                          _toggleSelectionMode();
+                          _togglePostSelection(doc.id);
+                        }
+                      },
+                      child: Card(
+                        color: isSelected
+                            ? Colors.yellowAccent.withAlpha(136)
+                            : Colors.grey[900],
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child:
+                                  data['imageUrl'] != null &&
+                                      data['imageUrl']
+                                          .toString()
+                                          .startsWith('http')
+                                  ? Image.network(
+                                      data['imageUrl'],
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(color: Colors.black12),
+                            ),
+                            if (isMatched)
+                              const Positioned(
+                                bottom: 6, // moved from top: 6
+                                right: 6,
+                                child: Icon(
+                                  Icons.verified,
+                                  color: Colors.green,
+                                  size: 24,
+                                ),
+                              ),
+                            if (_isSelectionMode)
+                              Align(
+                                alignment: Alignment.topLeft,
+                                child: Checkbox(
+                                  value: isSelected,
+                                  onChanged: (value) =>
+                                      _togglePostSelection(doc.id),
+                                  activeColor: Colors.yellowAccent,
+                                ),
+                              ),
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: PopupMenuButton<String>(
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  color: Colors.white70,
+                                ),
+                                onSelected: (value) {
+                                  if (value == 'delete') {
+                                    _deletePost(
+                                      doc.id,
+                                      _tabIndex == 0
                                           ? 'lost_items'
                                           : 'found_items',
-                                      postType: _tabIndex == 0
-                                          ? 'Lost'
-                                          : 'Found',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            onLongPress: () {
-                              if (!_isSelectionMode) {
-                                _toggleSelectionMode();
-                                _togglePostSelection(doc.id);
-                              }
-                            },
-                            child: Card(
-                              color: isSelected
-                                  ? Colors.yellowAccent.withAlpha(136)
-                                  : Colors.grey[900],
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child:
-                                        data['imageUrl'] != null &&
-                                            data['imageUrl']
-                                                .toString()
-                                                .startsWith('http')
-                                        ? Image.network(
-                                            data['imageUrl'],
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Container(color: Colors.black12),
-                                  ),
-                                  if (isMatched)
-                                    const Positioned(
-                                      bottom: 6, // moved from top: 6
-                                      right: 6,
-                                      child: Icon(
-                                        Icons.verified,
-                                        color: Colors.green,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  if (_isSelectionMode)
-                                    Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Checkbox(
-                                        value: isSelected,
-                                        onChanged: (value) =>
-                                            _togglePostSelection(doc.id),
-                                        activeColor: Colors.yellowAccent,
-                                      ),
-                                    ),
-                                  Align(
-                                    alignment: Alignment.topRight,
-                                    child: PopupMenuButton<String>(
-                                      icon: const Icon(
-                                        Icons.more_vert,
-                                        color: Colors.white70,
-                                      ),
-                                      onSelected: (value) {
-                                        if (value == 'delete') {
-                                          _deletePost(
-                                            doc.id,
-                                            _tabIndex == 0
-                                                ? 'lost_items'
-                                                : 'found_items',
-                                            _tabIndex == 0 ? 'Lost' : 'Found',
-                                          );
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.delete,
-                                                color: Colors.red,
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text('Delete Post'),
-                                            ],
-                                          ),
+                                      _tabIndex == 0 ? 'Lost' : 'Found',
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
                                         ),
+                                        SizedBox(width: 8),
+                                        Text('Delete Post'),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
