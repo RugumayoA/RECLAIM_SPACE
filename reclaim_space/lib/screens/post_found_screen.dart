@@ -444,6 +444,7 @@ class _PostFoundScreenState extends State<PostFoundScreen> {
         details: details,
         imageUrl: imageResult['url'] ?? '',
         imageHash: imageResult['hash'] ?? '',
+        context: context,
       );
       setState(() => _loading = false);
       if (!mounted) return;

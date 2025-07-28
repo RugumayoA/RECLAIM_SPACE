@@ -374,6 +374,7 @@ class _PostLostScreenState extends State<PostLostScreen> {
         details: details,
         imageUrl: imageResult['url']!,
         imageHash: imageResult['hash']!,
+        context: context,
       );
       await clearDraft();
       setState(() => _loading = false);
