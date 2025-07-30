@@ -185,29 +185,7 @@ class PostLostService {
           print('📊 Image similarity with ${doc.id}: ${(imageSimilarity * 100).toStringAsFixed(1)}%');
         }
         
-        // Calculate location-based score if both items have location
-        double locationScore = 0.0;
-        if (position != null && found['latitude'] != null && found['longitude'] != null) {
-          Position foundPosition = Position(
-            latitude: found['latitude'],
-            longitude: found['longitude'],
-            timestamp: DateTime.now(),
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
-          );
-          
-          double distance = LocationService.calculateDistance(position, foundPosition);
-          
-          if (distance <= 100) { locationScore = 1.0; }
-          else if (distance <= 1000) { locationScore = 0.8; }
-          else if (distance <= 5000) { locationScore = 0.5; }
-          else { locationScore = 0.1; }
-        }
+        // Location is only used for SMS notifications, not for matching
         
         if (type == 'ID') {
           final foundSubType = (found['subType'] ?? '').toString().trim().toLowerCase();
@@ -226,9 +204,9 @@ class PostLostService {
           
           print('🆔 ID Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall score including location
+          // Calculate overall score (image similarity only)
           if (isMatch) {
-            double overallScore = (imageSimilarity * 0.6) + (locationScore * 0.4);
+            double overallScore = imageSimilarity; // Only image similarity matters for matching
             print('🎯 ID match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
@@ -291,10 +269,10 @@ class PostLostService {
           
           print('👤 Person Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall match score for Person including location
+          // Calculate overall match score for Person (text + image only)
           if (isMatch) {
             final textScore = totalCriteria > 0 ? matchScore / totalCriteria : 0.0;
-            final overallScore = (textScore * 0.4) + (imageSimilarity * 0.3) + (locationScore * 0.3);
+            final overallScore = (textScore * 0.4) + (imageSimilarity * 0.6); // No location in matching
             print('🎯 Person match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
@@ -354,10 +332,10 @@ class PostLostService {
           
           print('📱 Electronics Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall match score for Electronics including location
+          // Calculate overall match score for Electronics (text + image only)
           if (isMatch) {
             final textScore = totalCriteria > 0 ? matchScore / totalCriteria : 0.0;
-            final overallScore = (textScore * 0.4) + (imageSimilarity * 0.3) + (locationScore * 0.3);
+            final overallScore = (textScore * 0.4) + (imageSimilarity * 0.6); // No location in matching
             print('🎯 Electronics match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
@@ -420,10 +398,10 @@ class PostLostService {
           
           print('💍 Jewelry Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall match score for Jewelry & Watches including location
+          // Calculate overall match score for Jewelry & Watches (text + image only)
           if (isMatch) {
             final textScore = totalCriteria > 0 ? matchScore / totalCriteria : 0.0;
-            final overallScore = (textScore * 0.4) + (imageSimilarity * 0.3) + (locationScore * 0.3);
+            final overallScore = (textScore * 0.4) + (imageSimilarity * 0.6); // No location in matching
             print('🎯 Jewelry match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
@@ -493,10 +471,10 @@ class PostLostService {
           
           print('👕 Clothing Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall match score for Clothing & Bags including location
+          // Calculate overall match score for Clothing & Bags (text + image only)
           if (isMatch) {
             final textScore = totalCriteria > 0 ? matchScore / totalCriteria : 0.0;
-            final overallScore = (textScore * 0.3) + (imageSimilarity * 0.4) + (locationScore * 0.3);
+            final overallScore = (textScore * 0.3) + (imageSimilarity * 0.7); // No location in matching
             print('🎯 Clothing match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
@@ -556,10 +534,10 @@ class PostLostService {
           
           print('📄 Documents Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall match score for Documents including location
+          // Calculate overall match score for Documents (text + image only)
           if (isMatch) {
             final textScore = totalCriteria > 0 ? matchScore / totalCriteria : 0.0;
-            final overallScore = (textScore * 0.5) + (imageSimilarity * 0.3) + (locationScore * 0.2);
+            final overallScore = (textScore * 0.5) + (imageSimilarity * 0.5); // No location in matching
             print('🎯 Documents match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
@@ -596,9 +574,9 @@ class PostLostService {
           
           print('🔍 Other Final match: $isMatch (Image similarity: ${(imageSimilarity * 100).toStringAsFixed(1)}%)');
           
-          // Calculate overall match score for Other including location
+          // Calculate overall match score for Other (image similarity only)
           if (isMatch) {
-            final overallScore = (imageSimilarity * 0.5) + (locationScore * 0.5); // For other items, rely more on image similarity and location
+            final overallScore = imageSimilarity; // For Other, just use image similarity
             print('🎯 Other match found! Overall score: ${(overallScore * 100).toStringAsFixed(1)}%');
             
             if (overallScore > bestMatchScore) {
