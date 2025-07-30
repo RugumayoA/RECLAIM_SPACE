@@ -33,7 +33,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-//apiKey: "AIzaSyC8tHxGc7fvE80mujdNe39op3D90XTpoig",
 //  authDomain: "reclaim-space-df557.firebaseapp.com",
 //  projectId: "reclaim-space-df557",
 //  storageBucket: "reclaim-space-df557.firebasestorage.app",
