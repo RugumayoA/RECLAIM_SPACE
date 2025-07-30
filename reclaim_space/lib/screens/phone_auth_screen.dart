@@ -17,7 +17,18 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   bool _loading = false;
 
   void _sendOTP() async {
-    final phone = _countryCode + _phoneController.text.trim();
+    String input = _phoneController.text.trim().replaceAll(RegExp(r'[^\d+]'), '');
+    String phone;
+    if (input.startsWith('0')) {
+      phone = '+256' + input.substring(1);
+    } else if (input.startsWith('+')) {
+      phone = input;
+    } else if (input.startsWith('256')) {
+      phone = '+$input';
+    } else {
+      phone = '+256$input';
+    }
+    print('📱 Sending OTP to phone: $phone');
 
     if (phone.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -32,10 +43,10 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       phoneNumber: phone,
       verificationCompleted: (PhoneAuthCredential credential) {
         // Auto-retrieval on Android
-        log('Phone verification completed automatically: $credential');
+        log('✅ Phone verification completed automatically: $credential');
       },
       verificationFailed: (FirebaseAuthException e) {
-        log('Phone verification failed with error: ${e.code} - ${e.message}');
+        log('❌ Phone verification failed with error: ${e.code} - ${e.message}');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Verification failed: ${e.message}')),
@@ -44,6 +55,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
         }
       },
       codeSent: (String verificationId, int? resendToken) {
+        log('📨 OTP code sent successfully! Verification ID: $verificationId');
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -51,7 +63,9 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
           ),
         );
       },
-      codeAutoRetrievalTimeout: (String verificationId) {},
+      codeAutoRetrievalTimeout: (String verificationId) {
+        log('⏰ OTP auto-retrieval timeout for: $verificationId');
+      },
     );
   }
 

@@ -31,7 +31,9 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => SignupPasswordScreen(email: email, name: name)),
+      MaterialPageRoute(
+        builder: (_) => SignupPasswordScreen(email: email, name: name),
+      ),
     );
   }
 
@@ -103,11 +105,22 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Already have an account?', style: TextStyle(color: Colors.white70)),
+                  Text(
+                    'Already have an account?',
+                    style: TextStyle(color: Colors.white70),
+                  ),
                   SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-                    child: Text('Log in', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                    onTap: () =>
+                        Navigator.pushReplacementNamed(context, '/login'),
+                    child: Text(
+                      'Log in',
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -166,7 +179,7 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

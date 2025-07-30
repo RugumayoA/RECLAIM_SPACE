@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'splash_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,6 +16,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _loading = false;
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -118,7 +122,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account deleted'), backgroundColor: Colors.green),
       );
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Navigate to splash screen after account deletion
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const SplashScreen()),
+        (route) => false, // Remove all previous routes
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete account: $e'), backgroundColor: Colors.red),
@@ -167,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _currentPasswordController,
-                    obscureText: true,
+                    obscureText: _obscureCurrentPassword,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Current password',
@@ -175,12 +183,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       filled: true,
                       fillColor: Colors.grey[850],
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureCurrentPassword ? Icons.visibility : Icons.visibility_off,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureCurrentPassword = !_obscureCurrentPassword;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _newPasswordController,
-                    obscureText: true,
+                    obscureText: _obscureNewPassword,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'New password',
@@ -188,12 +207,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       filled: true,
                       fillColor: Colors.grey[850],
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureNewPassword ? Icons.visibility : Icons.visibility_off,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureNewPassword = !_obscureNewPassword;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _confirmPasswordController,
-                    obscureText: true,
+                    obscureText: _obscureConfirmPassword,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Confirm new password',
@@ -201,6 +231,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       filled: true,
                       fillColor: Colors.grey[850],
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
