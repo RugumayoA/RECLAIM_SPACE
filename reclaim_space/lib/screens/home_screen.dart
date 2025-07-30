@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'launch_screen.dart';
 import 'post_lost_screen.dart';
 import 'profile_screen.dart';
 import 'post_found_screen.dart';
-//import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
 import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -91,7 +87,7 @@ class _HomeContent extends StatelessWidget {
             },
             child: const Text('Post Lost'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 16), 
           ElevatedButton(
             onPressed: () {
               Navigator.push(
